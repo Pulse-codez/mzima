@@ -12,6 +12,10 @@ export interface AppointmentRequest {
   requested_specialty: string;
   status: string;
   created_at: string;
+  integration_status?: string;
+  external_system?: string | null;
+  external_reference?: string | null;
+  integrated_at?: string | null;
 }
 
 export interface QueueVisit {
@@ -28,6 +32,7 @@ export interface QueueVisit {
 export interface Visit {
   id: string;
   token_number: string;
+  patient_identifier: string | null;
   arrival_time: string;
   age_band: string;
   visit_type: string;
@@ -47,6 +52,28 @@ export interface ClinicianDecision {
   decision: string;
   reason: string | null;
   created_at: string;
+}
+
+export interface FlowSummary {
+  service_point: string;
+  queue_length: number;
+  average_wait_for_triage_minutes: number;
+  average_wait_for_assessment_minutes: number;
+  available_staff: number;
+  stations_functional: number;
+  capacity_per_hour: number;
+  utilisation: number;
+  capacity_gap: number;
+}
+
+export interface AuditEvent {
+  id: string;
+  actor_id: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string;
+  timestamp: string | null;
+  payload: Record<string, unknown>;
 }
 
 async function request<T>(
@@ -131,6 +158,7 @@ export function getWalkInQueue(token: string): Promise<QueueVisit[]> {
 
 export function checkInVisit(
   payload: {
+    patient_identifier: string;
     age_band: string;
     visit_type: string;
     red_flags: Record<string, boolean>;
@@ -182,4 +210,20 @@ export function extractObservation(text: string, token: string): Promise<{ extra
     method: 'POST',
     body: JSON.stringify({ text }),
   }, token);
+}
+
+export function getFlowSummary(token: string): Promise<FlowSummary> {
+  return request('/api/v1/flow/summary', {}, token);
+}
+
+export function createFlowSnapshot(token: string): Promise<{ id: string }> {
+  return request('/api/v1/flow/metric-snapshots', { method: 'POST' }, token);
+}
+
+export function getPilotValidation(token: string): Promise<Record<string, unknown>> {
+  return request('/api/v1/flow/pilot-validation', {}, token);
+}
+
+export function getAuditEvents(token: string): Promise<AuditEvent[]> {
+  return request('/api/v1/audit/events', {}, token);
 }
