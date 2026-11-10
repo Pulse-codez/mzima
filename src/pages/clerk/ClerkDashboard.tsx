@@ -57,6 +57,7 @@ export function ClerkDashboard() {
   async function register(e: React.FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
+    if (!patientRef.trim()) errs.patient = 'Enter a patient reference.';
     if (!ageBand) errs.age = 'Select an age band.';
     if (!visitType) errs.visit = 'Select a visit type.';
     setFieldErrors(errs);
@@ -65,7 +66,7 @@ export function ClerkDashboard() {
     setSubmitting(true);
     setCreatedToken(null);
     try {
-      const visit = await checkInVisit({ age_band: ageBand, visit_type: visitType, red_flags: flags }, token);
+      const visit = await checkInVisit({ patient_identifier: patientRef.trim(), age_band: ageBand, visit_type: visitType, red_flags: flags }, token);
       setCreatedToken(visit.token_number);
       setPatientRef('');
       await load();
@@ -91,8 +92,9 @@ export function ClerkDashboard() {
         <DataPanel title="Register walk-in">
           <form onSubmit={register} className="sc-form">
             <div className="sc-field">
-              <label>Patient reference</label>
-              <input value={patientRef} onChange={(e) => setPatientRef(e.target.value)} placeholder="Optional reference" />
+              <label htmlFor="patient-reference">Patient reference</label>
+              <input id="patient-reference" required value={patientRef} onChange={(e) => setPatientRef(e.target.value)} placeholder="Facility patient ID" />
+              {fieldErrors.patient && <span className="sc-err">{fieldErrors.patient}</span>}
             </div>
             <div className="sc-field">
               <label>Age band</label>

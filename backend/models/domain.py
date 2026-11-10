@@ -48,6 +48,7 @@ class Visit(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     token_number = Column(String(20), nullable=False, index=True)
+    patient_identifier = Column(String(100), nullable=True, index=True)
     arrival_time = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
     age_band = Column(String(20), nullable=False)  # e.g., 'under_5', 'adult', 'over_65'
     visit_type = Column(String(20), nullable=False)  # 'new', 'review', 'refill'
@@ -89,6 +90,11 @@ class AppointmentRequest(Base):
     patient_identifier = Column(String(100), nullable=False)
     requested_specialty = Column(String(100), nullable=False)
     status = Column(String(50), default="PENDING_REVIEW")  # PENDING_REVIEW, APPROVED, REJECTED
+    integration_status = Column(String(40), default="NOT_SYNCED")
+    external_system = Column(String(80), nullable=True)
+    external_reference = Column(String(160), nullable=True)
+    integration_idempotency_key = Column(String(160), nullable=True, unique=True)
+    integrated_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     decisions = relationship("ClinicianDecision", back_populates="request")

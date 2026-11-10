@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -28,14 +28,19 @@ def check_in_patient(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Auto-generate token number
-    today_count = db.query(Visit).count() + 1
-    token_num = f"T-{today_count:03d}"
+    # Tokens are scoped to the local facility day, avoiding a global counter
+    # that grows forever and making the printed token easier to reconcile.
+    today = datetime.utcnow().date()
+    start = datetime.combine(today, datetime.min.time())
+    end = start + timedelta(days=1)
+    today_count = db.query(Visit).filter(Visit.arrival_time >= start, Visit.arrival_time < end).count() + 1
+    token_num = f"T-{today.strftime('%Y%m%d')}-{today_count:03d}"
 
     is_fast_track = any(visit_in.red_flags.values())
 
     visit = Visit(
         token_number=token_num,
+        patient_identifier=visit_in.patient_identifier,
         age_band=visit_in.age_band,
         visit_type=visit_in.visit_type,
         is_fast_track=is_fast_track,

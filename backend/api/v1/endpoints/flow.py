@@ -76,6 +76,48 @@ def get_wait_metrics(
     return wait_metrics(db, service_point)
 
 
+@router.get("/pilot-validation")
+def pilot_validation(
+    service_point: str | None = Query(default=None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Compare the first and latest recorded snapshots for a pilot readout."""
+    query = db.query(FlowMetricSnapshot).order_by(FlowMetricSnapshot.metric_time.asc())
+    if service_point:
+        query = query.filter(FlowMetricSnapshot.service_point == service_point)
+    snapshots = query.all()
+    baseline = snapshots[0] if snapshots else None
+    latest = snapshots[-1] if snapshots else None
+
+    def metrics(row):
+        return None if not row else {
+            "metric_time": row.metric_time.isoformat(),
+            "queue_length": row.queue_length,
+            "arrivals": row.arrivals,
+            "completed": row.completed,
+            "average_wait_for_triage_minutes": row.avg_wait_for_triage_minutes or 0,
+            "average_wait_for_assessment_minutes": row.avg_wait_for_assessment_minutes or 0,
+            "utilisation": row.utilisation or 0,
+        }
+
+    baseline_data, latest_data = metrics(baseline), metrics(latest)
+    changes = None
+    if baseline_data and latest_data:
+        changes = {
+            key: round(latest_data[key] - baseline_data[key], 2)
+            for key in ("queue_length", "average_wait_for_triage_minutes", "average_wait_for_assessment_minutes", "utilisation")
+        }
+    return {
+        "service_point": service_point or "all",
+        "snapshot_count": len(snapshots),
+        "baseline": baseline_data,
+        "latest": latest_data,
+        "changes": changes,
+        "interpretation": "Collect at least two snapshots to compare pilot performance." if len(snapshots) < 2 else "Negative wait and queue changes indicate improvement.",
+    }
+
+
 @router.post("/metric-snapshots")
 def create_metric_snapshot(
     service_point: str | None = Query(default=None),

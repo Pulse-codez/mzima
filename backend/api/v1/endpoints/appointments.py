@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -16,6 +17,7 @@ from backend.schemas.domain import (
     ClinicianDecisionResponse,
 )
 from backend.services.audit.service import log_audit_event
+from backend.adapters.clinic.mock_fhir import MockClinicFHIRAdapter
 
 router = APIRouter()
 
@@ -129,3 +131,48 @@ def get_appointment_details(request_id: uuid.UUID, db: Session = Depends(get_db)
             detail="Appointment request not found",
         )
     return app_request
+
+
+@router.post(
+    "/appointment-requests/{request_id}/sync",
+    response_model=AppointmentRequestResponse,
+    dependencies=[Depends(RoleChecker([RoleEnum.SHIFT_LEAD, RoleEnum.ADMIN]))],
+)
+def sync_approved_appointment(
+    request_id: uuid.UUID,
+    idempotency_key: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Synchronize an approved request to the facility-approved mock adapter.
+
+    The adapter boundary is intentionally explicit: replacing the mock with a
+    facility-approved HMIS/FHIR client does not change the review contract.
+    """
+    request = db.query(AppointmentRequest).filter(AppointmentRequest.id == request_id).first()
+    if not request:
+        raise HTTPException(status_code=404, detail="Appointment request not found")
+    if request.status != "APPROVED":
+        raise HTTPException(status_code=409, detail="Only approved requests can be synchronized")
+    if request.integration_idempotency_key and request.integration_idempotency_key != idempotency_key:
+        raise HTTPException(status_code=409, detail="Request was already synchronized with another idempotency key")
+    if request.integration_status == "SYNCED":
+        return request
+
+    resource = MockClinicFHIRAdapter.export_to_fhir_appointment(request)
+    request.integration_status = "SYNCED"
+    request.external_system = "mock_fhir_facility_adapter"
+    request.external_reference = resource["id"]
+    request.integration_idempotency_key = idempotency_key
+    request.integrated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(request)
+    log_audit_event(
+        db,
+        actor_id=current_user.id,
+        action="SYNC_APPROVED_APPOINTMENT",
+        entity_type="AppointmentRequest",
+        entity_id=str(request.id),
+        payload={"system": request.external_system, "external_reference": request.external_reference},
+    )
+    return request

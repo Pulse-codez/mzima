@@ -42,12 +42,14 @@ def get_weighted_queue(db: Session) -> list[QueueItemResponse]:
         )
 
     # Sorting order: fast-track first, then wait-capped, then highest calculated score
-    queue_items.sort(
-        key=lambda x: (
-            not x.is_fast_track,
-            not x.is_wait_capped,
-            -x.calculated_score,
-        )
-    )
+    # Keep the rule order explicit and add stable tie-breakers so the same
+    # inputs always produce the same queue, including after a refresh.
+    queue_items.sort(key=lambda x: (
+        0 if x.is_fast_track else 1,
+        0 if x.is_wait_capped else 1,
+        -x.calculated_score,
+        x.arrival_time,
+        x.token_number,
+    ))
 
     return queue_items

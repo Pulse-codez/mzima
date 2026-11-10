@@ -6,6 +6,7 @@ from backend.models.domain import RoleEnum, VisitStatusEnum
 
 # --- Walk-in Schemas ---
 class VisitCreate(BaseModel):
+    patient_identifier: str = Field(..., min_length=1, max_length=100)
     age_band: str = Field(..., description="'under_5', 'adult', or 'over_65'")
     visit_type: str = Field(..., description="'new', 'review', or 'refill'")
     red_flags: dict[str, bool] = Field(default_factory=dict)
@@ -14,6 +15,7 @@ class VisitCreate(BaseModel):
 class VisitResponse(BaseModel):
     id: uuid.UUID
     token_number: str
+    patient_identifier: str | None = None
     arrival_time: datetime
     age_band: str
     visit_type: str
@@ -65,6 +67,10 @@ class AppointmentRequestResponse(BaseModel):
     requested_specialty: str
     status: str
     created_at: datetime
+    integration_status: str = "NOT_SYNCED"
+    external_system: str | None = None
+    external_reference: str | None = None
+    integrated_at: datetime | None = None
 
     class Config:
         from_attributes = True

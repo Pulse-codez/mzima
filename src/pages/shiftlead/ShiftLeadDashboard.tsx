@@ -5,7 +5,7 @@ import { StatusBadge } from '../../components/dashboard/StatusBadge';
 import { EmptyState } from '../../components/dashboard/EmptyState';
 import { ErrorState } from '../../components/dashboard/ErrorState';
 import { useAuth } from '../../auth/AuthContext';
-import { decideAppointmentRequest, getAppointmentQueue } from '../../api';
+import { decideAppointmentRequest, getAppointmentQueue, getAuditEvents, getFlowSummary, getPilotValidation, createFlowSnapshot } from '../../api';
 import { listDecisionLogStub } from '../../api/stubs';
 import type { AppointmentRequest, ClinicianDecision } from '../../api';
 
@@ -34,6 +34,10 @@ export function ShiftLeadDashboard() {
   const [decisionResult, setDecisionResult] = useState<ClinicianDecision | null>(null);
   const [decisionError, setDecisionError] = useState('');
   const [log, setLog] = useState<ClinicianDecision[]>([]);
+  const [flow, setFlow] = useState<Awaited<ReturnType<typeof getFlowSummary>> | null>(null);
+  const [pilot, setPilot] = useState<Record<string, unknown> | null>(null);
+  const [auditEvents, setAuditEvents] = useState<Awaited<ReturnType<typeof getAuditEvents>>>([]);
+  const [snapshotting, setSnapshotting] = useState(false);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -43,6 +47,8 @@ export function ShiftLeadDashboard() {
       setQueue(data.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()));
       const decisions = await listDecisionLogStub();
       setLog(decisions);
+      const [flowData, pilotData, auditData] = await Promise.all([getFlowSummary(token), getPilotValidation(token), getAuditEvents(token)]);
+      setFlow(flowData); setPilot(pilotData); setAuditEvents(auditData);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unable to load review queue.');
     } finally {
@@ -68,6 +74,14 @@ export function ShiftLeadDashboard() {
     setReasonError('');
     setDecisionResult(null);
     setDecisionError('');
+  }
+
+  async function recordPilotSnapshot() {
+    if (!token) return;
+    setSnapshotting(true);
+    try { await createFlowSnapshot(token); setPilot(await getPilotValidation(token)); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Unable to record pilot snapshot.'); }
+    finally { setSnapshotting(false); }
   }
 
   useEffect(() => { resetSelection(); }, [selectedId]);
@@ -190,6 +204,33 @@ export function ShiftLeadDashboard() {
             </tbody>
           </table>
         )}
+      </DataPanel>
+      <div className="sc-grid-2">
+        <DataPanel title="Facility operations">
+          {!flow && <p className="sc-muted">Loading current capacity…</p>}
+          {flow && <>
+            <div className="sc-mini-grid">
+              <div><span className="sc-stat-label">Queue</span><strong>{flow.queue_length}</strong></div>
+              <div><span className="sc-stat-label">Wait to triage</span><strong>{flow.average_wait_for_triage_minutes} min</strong></div>
+              <div><span className="sc-stat-label">Staff available</span><strong>{flow.available_staff}</strong></div>
+              <div><span className="sc-stat-label">Capacity / hour</span><strong>{flow.capacity_per_hour}</strong></div>
+            </div>
+            <p className="sc-note">Capacity gap: {flow.capacity_gap}. Utilisation: {Math.round(flow.utilisation * 100)}%.</p>
+            <button className="sc-btn primary" onClick={recordPilotSnapshot} disabled={snapshotting}>{snapshotting ? 'Recording…' : 'Record pilot snapshot'}</button>
+          </>}
+        </DataPanel>
+        <DataPanel title="Pilot validation">
+          <p className="sc-muted">Compare recorded baseline and latest operational snapshots. Use after an approved workflow run.</p>
+          {pilot?.snapshot_count ? <>
+            <div className="sc-success-box">{String(pilot.interpretation)}</div>
+            <p className="sc-note">Snapshots recorded: {String(pilot.snapshot_count)}</p>
+            {pilot.changes && <pre className="sc-json">{JSON.stringify(pilot.changes, null, 2)}</pre>}
+          </> : <p className="sc-muted">No pilot snapshots yet.</p>}
+        </DataPanel>
+      </div>
+      <DataPanel title="Audit trail">
+        <p className="sc-muted">Append-only operational events visible to shift leads.</p>
+        {auditEvents.length === 0 ? <EmptyState title="No audit events" body="Queue and scheduling actions will appear here." /> : <table className="sc-table"><thead><tr><th>Time</th><th>Action</th><th>Entity</th><th>Details</th></tr></thead><tbody>{auditEvents.slice(0, 8).map((event) => <tr key={event.id}><td className="sc-mono">{event.timestamp ? new Date(event.timestamp).toLocaleString() : '—'}</td><td><StatusBadge label={event.action} /></td><td className="sc-mono">{event.entity_type} · {event.entity_id.slice(0, 8)}</td><td>{JSON.stringify(event.payload)}</td></tr>)}</tbody></table>}
       </DataPanel>
     </DashboardLayout>
   );

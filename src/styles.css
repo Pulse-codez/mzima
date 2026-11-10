@@ -258,6 +258,11 @@
 .sc-list { display: grid; }
 .sc-simple-list { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
 .sc-confirm { padding: 12px; border: 1px solid #E5E7EB; border-radius: 8px; background: #F9FAFB; display: grid; gap: 8px; }
+.sc-mini-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.sc-mini-grid > div { display: grid; gap: 4px; padding: 10px; background: #F9FAFB; border-radius: 8px; }
+.sc-mini-grid strong { font-size: 18px; font-variant-numeric: tabular-nums; }
+.sc-json { margin: 10px 0 0; padding: 10px; background: #F9FAFB; border-radius: 8px; overflow: auto; font-size: 12px; }
+@media (max-width: 700px) { .sc-mini-grid { grid-template-columns: 1fr 1fr; } }
 .sc-empty { padding: 24px; text-align: center; color: #6B7280; }
 .sc-empty-title { font-weight: 700; color: #111827; margin-bottom: 6px; }
 .sc-error { padding: 16px; background: #FEE2E2; color: #B91C1C; border-radius: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
