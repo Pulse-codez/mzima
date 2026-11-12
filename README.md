@@ -1,96 +1,210 @@
-# 🏥 Mzima | Appointment and Routing Co-pilot
+# Mzima | MCP-Enabled Healthcare Workflow & Capacity-Aware Queue Management
 
 <div align="center">
 
-![Mzima Logo](https://img.shields.io/badge/Mzima-Appointment%20%26%20Routing%20Co--pilot-brightgreen?style=for-the-badge&logo=fastapi)
+![Mzima](https://img.shields.io/badge/Mzima-Connecting%20Healthcare%20Systems-brightgreen?style=for-the-badge)
 ![Python](https://img.shields.io/badge/Python-3.11+-blue?style=flat-square&logo=python)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.143-009688?style=flat-square&logo=fastapi)
+![FastAPI](https://img.shields.io/badge/FastAPI-REST%20API-009688?style=flat-square&logo=fastapi)
 ![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react)
 ![Neon](https://img.shields.io/badge/Neon-Postgres-00E599?style=flat-square&logo=postgresql)
+![MCP](https://img.shields.io/badge/MCP-Read--Only%20Tools-6f42c1?style=flat-square)
 
-**A synthetic-data prototype for outpatient appointment requests and clinic queue operations**
+**A synthetic-data prototype for outpatient queues, appointment coordination, and clinic scheduling**
+
+*Connecting Healthcare Systems. Strengthening Human-Centred Care.*
 
 </div>
 
-> ⚠️ **Safety Boundary:** This prototype is **not** for live care. It is not a diagnostic system and does not autonomously triage patients or change bookings or queue positions. Use **synthetic data only**.
+> **Safety boundary:** Mzima is **not** approved for live care. It is not a diagnostic system and does not autonomously triage patients or change bookings or queue positions. Use **synthetic data only**.
+>
+> No AI model independently diagnoses patients, determines clinical urgency, or overrides professional clinical judgement. A named, authenticated clinician must approve any priority, referral, booking, or queue-affecting change.
 
 ---
 
-## 📁 Project Layout
+## What is Mzima?
 
-The repository root is the single project root. Python backend (`app/`), frontend (`src/`), migrations, seed data, docs, and tests all live at the root.
+Mzima is a proposed healthcare workflow and interoperability platform designed for **Level 6 public hospitals in Kenya**. It leverages the **Model Context Protocol (MCP)** to provide a controlled, standardized interface through which hospital applications, operational services, and intelligent systems can interact with facility resources.
+
+At its core, Mzima connects **outpatient queue management**, **appointment coordination**, and **clinic scheduling** workflows while maintaining clear boundaries between automated operations and human clinical authority. Rather than replacing healthcare professionals, Mzima aims to reduce administrative friction, improve access to operational information, and provide accountable workflows that support healthcare workers.
+
+This repository is the working **synthetic-data prototype** of that proposal: a FastAPI backend, a React frontend, a read-only MCP tool layer, and an explicit clinician approval gate.
+
+---
+
+## The Problem We Are Solving
+
+Outpatient departments must coordinate high patient volumes, limited resources, available service points, and changing workloads. These activities become difficult to manage when information and operational processes are fragmented or heavily dependent on manual coordination.
+
+Key challenges:
+
+- Limited visibility into patient queues, waiting times, and facility capacity.
+- Fragmented communication between hospital applications and operational services.
+- Administrative delays in coordinating appointment requests and available slots.
+- Limited traceability of queue adjustments, staff interventions, and booking decisions.
+- Difficulty integrating emerging digital tools without compromising security, accountability, and existing workflows.
+
+Mzima addresses these challenges through a connected operational platform with controlled access to healthcare workflow capabilities.
+
+---
+
+## The Opportunity
+
+| Gap | Opportunity |
+|-----|-------------|
+| **System interoperability** | Standardized interfaces that let hospital applications and services exchange information and invoke controlled operational capabilities. |
+| **Fragmented workflows** | Connect patient registration, queue management, appointment coordination, and clinic scheduling within one coherent operational environment. |
+| **Capacity-aware operations** | Improve visibility into waiting times, available service points, and operational workload. |
+| **Clinical accountability** | Keep clinical priorities subject to approved protocols, professional validation, authorized changes, and audit trails. |
+| **Local adaptability** | Build interoperable solutions suited to Kenyan healthcare workflows, infrastructure constraints, and data-protection requirements. |
+
+---
+
+## Our Proposed Solution
+
+Mzima is built around an **MCP-enabled backend** that exposes controlled healthcare workflow capabilities to authorized applications and services.
+
+### 1. MCP-Based Interoperability Layer
+
+The Mzima MCP server acts as a controlled interface between applications, operational services, and connected healthcare systems. It exposes narrowly defined tools for:
+
+- retrieving appointment slots,
+- accessing queue information,
+- generating booking proposals,
+- executing authorized workflow actions.
+
+This lets systems communicate through a standardized interface while enforcing authentication, permissions, validation, and audit requirements.
+
+**In this prototype:** the read-only MCP tool layer exposes `get_live_queue_summary` and `get_pending_appointment_reviews`. Slot retrieval and commit tools remain on the roadmap.
+
+### 2. Capacity-Aware Queue Management
+
+Mzima manages walk-in registration, queue tokens, waiting-time tracking, and facility-approved prioritisation rules.
+
+Clinical safety is maintained through four principles:
+
+1. **Deterministic rules** implement facility-approved clinical protocols.
+2. **Clinical warning signs** are surfaced alongside their supporting observations.
+3. **Nurses validate** clinical priorities.
+4. **Queue changes are authorized and audited.**
+
+Implemented ordering rules:
+
+1. Red-flag fast-track visits first.
+2. Visits at or above the 120-minute wait cap next.
+3. Remaining visits by calculated score, descending — `minutes_waiting × age_weight` (`1.5` for `under_5` and `over_65`, otherwise `1.0`).
+4. Arrival time and token number break ties deterministically.
+
+### 3. Controlled Appointment Coordination
+
+The platform supports appointment requests, slot availability checks, and booking proposals. Where automated systems generate proposals, a **named and authenticated clinician must explicitly approve the decision** before a booking can be committed through the clinic integration layer.
+
+**In this prototype:** an agent can create a `PROPOSED_BY_AGENT` appointment request and audit that proposal. It cannot approve it. Approval requires a `SHIFT_LEAD` (or `ADMIN`) decision, which is recorded with the clinician's identity and reason. Approved requests can then be synchronized through a **mock FHIR facility adapter** with an idempotency key.
+
+---
+
+## Why Mzima
+
+- **MCP-based interoperability** for controlled access to healthcare workflow services.
+- **Connected outpatient workflows** spanning queues, appointments, and scheduling.
+- **Deterministic implementation** of facility-approved clinical protocols.
+- **Human-authorized** clinical prioritisation and appointment decisions.
+- **Auditable operations** and secure integration boundaries.
+- **Architecture designed for local deployment** and future healthcare-system integration.
+
+---
+
+## Our Vision
+
+Our vision is to establish a connected and interoperable foundation for outpatient healthcare operations in Kenya. Mzima aims to make healthcare workflows more transparent, improve coordination between hospital systems, and empower healthcare professionals with reliable operational tools.
+
+By placing interoperability, accountability, and human clinical authority at the centre of its design, Mzima seeks to contribute to a more connected and efficient healthcare ecosystem.
+
+---
+
+## Implementation Status
+
+| Capability | Status |
+|------------|--------|
+| Walk-in registration, queue tokens, weighted queue | Implemented |
+| Triage workflow | Implemented |
+| Clinical warning-sign alerts with supporting observations | Implemented |
+| Deterministic flow metrics, bottlenecks, recommendations, simulation | Implemented |
+| Appointment request → clinician review → decision → audit | Implemented |
+| Read-only MCP tools (queue summary, pending reviews) | Implemented |
+| Mock FHIR synchronization for approved bookings | Implemented |
+| Agent booking proposal with human-approval guardrail | Implemented as scaffolding |
+| MCP appointment-slot retrieval and routing tools | Planned |
+| Agent commit tool with one-time approval token | Planned |
+| Local/in-country model deployment | Planned |
+| Live HMIS/FHIR integration | Not implemented — mock adapter only |
+
+---
+
+## Project Layout
+
+The repository root is the single project root. The Python backend lives in `backend/`, the React frontend in `src/`, with migrations, data scripts, docs, and configuration at the root.
 
 ```mermaid
 graph TD
-    ROOT["📂 mzima/ (root)"]
-    ROOT --> APP["📁 app/ (FastAPI Backend)"]
-    ROOT --> SRC["📁 src/ (React + Vite)"]
-    ROOT --> MIG["📁 migrations/ (Alembic)"]
-    ROOT --> SCR["📁 scripts/ (Seeding & Tests)"]
-    ROOT --> DOCS["📁 docs/ (Architecture, Privacy, Evals)"]
-    ROOT --> INDEX["📄 index.html"]
-    ROOT --> NEON["📄 neon.ts (Neon Config)"]
-    ROOT --> PKG["📄 package.json"]
+    ROOT["mzima/ (root)"]
 
-    APP --> ADAPT["adapters/ (FHIR, etc.)"]
-    APP --> AGENT["agent/ (AI workflows)"]
-    APP --> API["api/v1/ (Endpoints)"]
-    APP --> CORE["core/ (Config & Security)"]
-    APP --> DB["db/ (SQLAlchemy)"]
-    APP --> MCP["mcp/ (Read-Only Tools)"]
-    APP --> MODELS["models/ (ORM)"]
-    APP --> SCHEMAS["schemas/ (Pydantic)"]
-    APP --> SERVICES["services/ (Queue & Audit)"]
-    APP --> MAIN["main.py (Entrypoint)"]
-    APP --> VENV[".venv/ (Virtual Env)"]
+    ROOT --> BACKEND["backend/ (FastAPI)"]
+    ROOT --> SRC["src/ (React + Vite)"]
+    ROOT --> MIG["migrations/ (Alembic)"]
+    ROOT --> SCR["scripts/ (seed + verification)"]
+    ROOT --> DOCS["docs/ (design & governance)"]
+    ROOT --> ENV[".env"]
+    ROOT --> CONFIG["alembic.ini · package.json · vite.config.ts"]
 
-    SRC --> APP_TX["App.tsx"]
-    SRC --> API_TS["api.ts"]
-    SRC --> MAIN_TS["main.tsx"]
+    BACKEND --> ADAPT["adapters/clinic/ (mock FHIR)"]
+    BACKEND --> AGENT["agent/ (proposal workflow)"]
+    BACKEND --> API["api/v1/ (auth, visits, queue, appointments, flow, audit)"]
+    BACKEND --> CORE["core/ (settings)"]
+    BACKEND --> DB["db/ (SQLAlchemy session)"]
+    BACKEND --> MCP["mcp/ (read-only tools)"]
+    BACKEND --> MODELS["models/ (ORM)"]
+    BACKEND --> SCHEMAS["schemas/ (Pydantic)"]
+    BACKEND --> SERVICES["services/ (queue, flow, audit, appointments)"]
+    BACKEND --> MAIN["main.py (entrypoint)"]
 
-    style ROOT fill:#667eea,stroke:#764ba2,color:#fff
-    style APP fill:#43e97b,stroke:#38f9d7,color:#333
-    style SRC fill:#f093fb,stroke:#f5576c,color:#fff
-    style MIG fill:#fa709a,stroke:#fee140,color:#333
-    style SCR fill:#30cfd0,stroke:#330867,color:#fff
-    style DOCS fill:#a8edea,stroke:#fed6e3,color:#333
-    style MAIN fill:#ffeaa7,stroke:#fdcb6e,color:#333
-    style VENV fill:#dfe6e9,stroke:#b2bec3,color:#333
-    style NEON fill:#00E599,stroke:#00b894,color:#fff
+    SRC --> PAGES["pages/ (clerk, nurse, shift lead)"]
+    SRC --> SECTIONS["sections/ (landing content)"]
+    SRC --> COMPONENTS["components/"]
+    SRC --> AUTHSRC["auth/"]
+    SRC --> APISRC["api.ts"]
 ```
 
-| Directory | Purpose |
-|-----------|---------|
-| `app/` | FastAPI API, domain models, DB session, and adapters |
-| `src/` | React + TypeScript + Vite frontend |
-| `migrations/` | Alembic schema migrations (initial schema setup) |
-| `scripts/` | Seed data (`seed_data.py`), phase tests (`test_phase5.py`, `test_phase6.py`) |
-| `docs/` | Architecture, privacy, evaluation documentation |
-| `index.html` | Frontend entry point |
-| `.env` | Environment variables (Neon/PostgreSQL) |
-| `pyproject.toml` | Python package and dependencies |
-| `neon.ts` | Neon project config (org, project, branch) |
+| Path | Purpose |
+|------|---------|
+| `backend/` | FastAPI application: API routes, domain models, queue/flow services, agent workflow, read-only MCP tools |
+| `src/` | React + TypeScript + Vite frontend with role-specific dashboards |
+| `migrations/` | Alembic schema migrations |
+| `scripts/` | Seeding (`seed_data.py`, `seed_flow.py`), Synthea import, phase checks |
+| `docs/` | Architecture, privacy, evaluation, deployment, and frontend documentation |
+| `backend/pyproject.toml` | Backend package and dependencies (managed with `uv`) |
+| `.env` | Environment variables (PostgreSQL/Neon, secret key, optional model gateway) |
+| `neon.ts`, `render.yaml`, `vercel.json` | Neon, Render, and Vercel configuration |
 
 ---
 
-## 🚀 Start Locally
+## Start Locally
 
 ```mermaid
 flowchart LR
-    A[Configure .env] --> B[Start Python venv]
-    B --> D[Run Alembic migrations]
-    D --> E[Seed Data]
-    E --> F[Start FastAPI]
-    F --> G[Start Frontend]
-    G --> H[Open http://localhost:5173]
+    A[Configure .env] --> B[uv sync]
+    B --> C[Alembic upgrade]
+    C --> D[Seed synthetic data]
+    D --> E[Start FastAPI]
+    E --> F[Start Vite]
+    F --> G[Open localhost:5173]
 
     style A fill:#667eea,color:#fff
     style B fill:#764ba2,color:#fff
-    style D fill:#f093fb,color:#fff
-    style E fill:#4facfe,color:#fff
-    style F fill:#00f2fe,color:#fff
-    style G fill:#43e97b,color:#fff
-    style H fill:#38f9d7,color:#333
+    style C fill:#f093fb,color:#fff
+    style D fill:#4facfe,color:#fff
+    style E fill:#00f2fe,color:#fff
+    style F fill:#43e97b,color:#fff
+    style G fill:#38f9d7,color:#333
 ```
 
 ### Prerequisites
@@ -98,65 +212,66 @@ flowchart LR
 | Tool | Version | Purpose |
 |------|---------|---------|
 | Python | 3.11+ | Backend runtime |
+| [`uv`](https://docs.astral.sh/uv/) | Latest | Python environment and dependency management |
 | Node.js | 20+ | Frontend dev/build |
 | PostgreSQL | 14+ | Database (local or Neon) |
 
-### 1. Configure PostgreSQL (or Neon)
+### 1. Configure the database
 
-**Option A — Local PostgreSQL:**
-```sql
-CREATE USER mzima_user WITH PASSWORD 'replace-this-local-password';
-CREATE DATABASE mzima_db OWNER mzima_user;
-```
+**Option -> Neon Cloud (recommended for demos):**
 
-**Option B — Neon Cloud (recommended):**
-```bash
-npm i -g neon@latest
-neon login
-neon deploy --project-id noisy-snow-54213670 --branch production
-# Auto-populates .env with DATABASE_URL, DATABASE_URL_UNPOOLED, NEON_BRANCH
-```
+Create a project at [neon.tech](https://neon.tech) and copy the pooled connection string into `DATABASE_URL`. See [Neon Database Integration](#neon-database-integration).
 
-### 2. Setup Python Environment
+### 2. Configure the environment
 
 From the repository root:
 
 ```bash
 cp .env.example .env
-# Edit .env: set DATABASE_URL, SECRET_KEY, etc.
-
-cd app
-python3 -m venv .venv
-source .venv/bin/activate       # Linux / macOS
-# .venv\Scripts\activate        # Windows
-
-pip install --upgrade pip
-pip install -e .
-cd ..
+# Edit .env: set DATABASE_URL, DATABASE_URL_UNPOOLED, SECRET_KEY,
+# and optionally AGENTROUTER_API_KEY / BASE_URL / MODEL_NAME.
 ```
 
-### 3. Initialize Database
+Never commit `.env` or real credentials.
+
+### 3. Install backend dependencies
 
 ```bash
-alembic upgrade head              # Creates all tables
-python scripts/seed_data.py        # Seeds demo users & 301 visits
+uv sync --project backend
 ```
 
-### 4. Start the Backend API
+This creates or updates `backend/.venv` from `backend/pyproject.toml` and `backend/uv.lock`.
+
+### 4. Initialize the database
 
 ```bash
-source app/.venv/bin/activate
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uv run --project backend alembic -c backend/alembic.ini upgrade head
 ```
 
-<|message|> Endpoint | Check |
+Seed synthetic demo data (optional, but useful for the dashboards):
+
+```bash
+uv run --project backend python scripts/seed_data.py
+uv run --project backend python scripts/seed_flow.py
+uv run --project backend python scripts/import_synthea.py
+```
+
+### 5. Start the backend
+
+From the repository root:
+
+```bash
+uv run --project backend uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+| Endpoint | Check |
 |----------|-------|
 | API | `http://127.0.0.1:8000` |
 | Swagger | `http://127.0.0.1:8000/docs` |
 | Health | `GET /health` |
 | Readiness | `GET /ready` (tests DB connectivity) |
 
-### 5. Start the Frontend
+### 6. Start the frontend
 
 In a separate terminal:
 
@@ -165,182 +280,247 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`. Vite proxies `/api`, `/health`, and `/ready` to `http://127.0.0.1:8000`.
+Open `http://localhost:5173`. Vite proxies `/api`, `/health`, and `/ready` to `http://127.0.0.1:8000` by default; set `MZIMA_API_URL` to point elsewhere.
 
-### Quick Checks
+### Quick checks
 
 ```bash
-pytest                                   # Smoke tests (no DB required)
-npm run build                            # Frontend build
+npm run build   # Type-check and build the frontend
+```
+
+Backend verification scripts require a reachable database:
+
+```bash
+uv run --project backend python scripts/test_phase5.py
+uv run --project backend python scripts/test_phase6.py
 ```
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 flowchart TD
-    subgraph Frontend ["🖥️ React Frontend (src/)"]
-        UI[Staff/Patient Interface]
-        FETCH[fetchAPI]
+    subgraph Frontend ["React frontend (src/)"]
+        UI["Role dashboards<br/>clerk · nurse · shift lead"]
+        FETCH["fetch / auth context"]
     end
 
-    subgraph Backend ["🐍 FastAPI Backend (app/)"]
-        AUTH[Auth Endpoints]
-        VISITS[Visit Triaging]
-        QUEUE[Walk-in Queue]
-        APPT[Appointment Review]
-        AUDIT[Audit Service]
-        MCP[MCP Server]
+    subgraph Backend ["FastAPI backend (backend/)"]
+        AUTH["Auth<br/>JWT + argon2"]
+        VISITS["Visits & queue<br/>deterministic ordering"]
+        FLOW["Flow services<br/>metrics · alerts · simulation"]
+        APPT["Appointments<br/>request → review → decision"]
+        AGENT["Agent workflow<br/>proposal only"]
+        AUDIT["Audit service"]
+        MCP["Read-only MCP tools"]
+        ADAPTER["Mock FHIR adapter<br/>idempotent sync"]
     end
 
-    subgraph Database ["🗄️ PostgreSQL (Neon)"]
-        PG[(Database)]
+    subgraph Database ["PostgreSQL (Neon or local)"]
+        PG[("Mzima database")]
     end
 
     UI --> FETCH
     FETCH --> AUTH
     FETCH --> VISITS
-    FETCH --> QUEUE
+    FETCH --> FLOW
     FETCH --> APPT
+
+    AGENT -.->|"proposes, cannot approve"| APPT
+    APPT --> AUDIT
+    VISITS --> AUDIT
+    FLOW --> AUDIT
+    APPT --> ADAPTER
+    MCP -.->|"read-only"| PG
 
     AUTH --> PG
     VISITS --> PG
-    QUEUE --> PG
+    FLOW --> PG
     APPT --> PG
     AUDIT --> PG
-    MCP --> PG
 
     style Frontend fill:#e3f2fd,stroke:#2196f3
     style Backend fill:#e8f5e9,stroke:#4caf50
     style Database fill:#fff3e0,stroke:#ff9800
 ```
 
-### Core Services
+### Trust boundaries
+
+```mermaid
+flowchart LR
+    PATIENT["Patient / staff client"] --> API["Authenticated Mzima REST API"]
+    API --> AGENT["Agent proposal"]
+    AGENT --> REVIEW["Named clinician review"]
+    REVIEW -->|"approve + reason"| DECISION["Audit logged decision"]
+    DECISION --> ADAPTER["Clinic integration adapter"]
+    ADAPTER --> HMIS["HMIS / FHIR<br/>(mock in prototype)"]
+    AGENT -.->|"cannot approve"| REVIEW
+
+    style REVIEW fill:#ffeaa7,stroke:#fdcb6e,color:#333
+    style DECISION fill:#43e97b,stroke:#38f9d7,color:#333
+```
+
+The agent may plan, read, and propose. It **cannot** approve itself, commit a booking, or change queue priority. Any action outside the read-only or proposal boundary requires an authenticated human decision and produces an audit event.
+
+### Core services
 
 | Service | Description |
 |---------|-------------|
 | **Auth** | Login with argon2 password hashing, JWT (HS256), role-based access |
-| **Visits** | Walk-in visit registration, triage workflow |
-| **Queue** | Weighted FIFO queue with fast-track & wait-capping logic |
-| **Appointments** | Agent-proposed appointment requests → human clinician review/decision flow |
-| **Audit** | Immutable event logging for security & compliance |
-| **MCP** | Read-only interface exposing queue summary & pending reviews |
+| **Visits & queue** | Walk-in registration, per-day tokens, triage updates, weighted queue ordering |
+| **Flow** | Wait metrics, staffing/capacity snapshots, bottleneck scans, recommendations, simulations, clinical warning-sign alerts |
+| **Appointments** | Appointment request → clinician review → decision → optional mock FHIR synchronization |
+| **Agent** | Booking proposals marked `PROPOSED_BY_AGENT` with a human-approval invariant |
+| **Audit** | Event logging for security and compliance |
+| **MCP** | Read-only tools exposing queue summary and pending appointment reviews |
 
 ---
 
-## 🔑 Authentication & Roles
+## Authentication & Roles
 
 | Role | Permissions |
 |------|-------------|
-| `CLERK` | Register visits, login/logout |
-| `NURSE` | Register visits, triage, queue operations |
-| `SHIFT_LEAD` | All above + approve/reject appointment requests |
+| `CLERK` | Register walk-in visits, login/logout |
+| `NURSE` | Register visits, complete triage, call patients, queue operations |
+| `SHIFT_LEAD` | All queue operations + appointment review, approve/reject, sync approved bookings, audit access |
+| `ADMIN` | Administrative access across the above |
 
-**Default seeded accounts** (for testing only):
+**Default seeded accounts** (synthetic testing only):
+
 | Username | Password | Role |
 |----------|----------|------|
-| `clerk1` | `clerkpass123` | CLERK |
-| `nurse1` | `nursepass123` | NURSE |
-| `lead1` | `leadpass123` | SHIFT_LEAD |
+| `clerk1` | `clerkpass123` | `CLERK` |
+| `nurse1` | `nursepass123` | `NURSE` |
+| `lead1` | `leadpass123` | `SHIFT_LEAD` |
 
 ---
 
-## 📋 API Reference
+## API Reference
 
-```mermaid
-flowchart LR
-    subgraph Auth
-        A1["POST /api/v1/auth/login"]
-        A2["GET /api/v1/auth/me"]
-    end
-    subgraph Visits
-        V1["POST /api/v1/visits"]
-        V2["GET /api/v1/visits"]
-        V3["POST /api/v1/visits/:id/triage"]
-    end
-    subgraph Queue
-        Q1["GET /api/v1/queue"]
-        Q2["POST /api/v1/queue/:id/call"]
-    end
-    subgraph Appointments
-        P1["POST /api/v1/appointments/appointment-requests"]
-        P2["GET /api/v1/appointments/clinic/review-queue"]
-        P3["POST /api/v1/appointments/appointment-requests/:id/decision"]
-    end
-    subgraph System
-        S1["GET /health"]
-        S2["GET /ready"]
-    end
-    style Auth fill:#e3f2fd
-    style Visits fill:#e8f5e9
-    style Queue fill:#fff3e0
-    style Appointments fill:#fce4ec
-    style System fill:#f3e5f5
-```
+All application routes are under `/api/v1`; health checks are at the root.
 
-### All Endpoints
+### System
 
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/health` | Liveness check |
-| `GET` | `/ready` | DB connectivity check |
-| `POST` | `/api/v1/auth/login` | Login & receive JWT |
+| `GET` | `/ready` | Database connectivity check |
+| `GET` | `/v1/models` | Compatibility model listing for agent clients |
+
+### Authentication
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/v1/auth/login` | Login and receive a JWT |
 | `GET` | `/api/v1/auth/me` | Current user info |
-| `POST` | `/api/v1/visits` | Create walk-in visit |
-| `GET` | `/api/v1/visits` | List visits |
-| `POST` | `/api/v1/visits/{id}/triage` | Complete triage |
-| `GET` | `/api/v1/queue` | Live queue |
-| `POST` | `/api/v1/queue/{id}/call` | Call next patient |
-| `POST` | `/api/v1/appointments/appointment-requests` | Create appointment request |
-| `GET` | `/api/v1/appointments/clinic/review-queue` | Pending reviews |
-| `POST` | `/api/v1/appointments/appointment-requests/{id}/decision` | Clinician decision |
+
+### Visits & queue
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/v1/visits` | Register a walk-in visit (clerk) |
+| `GET` | `/api/v1/queue` | Live weighted queue |
+| `POST` | `/api/v1/queue/{visit_id}/call` | Call a patient, with optional override reason |
+| `POST` | `/api/v1/visits/{visit_id}/triage` | Complete triage (nurse) |
+
+### Appointments
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/api/v1/appointments/appointment-requests` | Create a pending appointment request |
+| `GET` | `/api/v1/appointments/clinic/review-queue` | Pending clinician reviews |
+| `POST` | `/api/v1/appointments/appointment-requests/{request_id}/decision` | Approve or reject with a reason |
+| `GET` | `/api/v1/appointments/appointments/{request_id}` | Appointment request details |
+| `POST` | `/api/v1/appointments/appointment-requests/{request_id}/sync` | Sync an approved request through the mock FHIR adapter (idempotency key required) |
+
+### Flow intelligence
+
+Selected routes under `/api/v1/flow`:
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/summary` | Queue and capacity summary |
+| `GET` | `/wait-metrics` | Waiting-time metrics |
+| `GET` | `/pilot-validation` | Pilot snapshot / validation view |
+| `GET` | `/stations` | List assessment stations |
+| `POST` | `/stations` | Create an assessment station |
+| `PATCH` | `/stations/{station_id}` | Update an assessment station |
+| `GET` | `/staffing` | Staffing capacity |
+| `POST` | `/staffing` | Add a staffing entry |
+| `POST` | `/capacity/snapshot` | Capacity snapshot |
+| `POST` | `/bottleneck-scan` | Detect bottlenecks |
+| `GET` | `/bottlenecks` | List bottleneck alerts |
+| `POST` | `/bottlenecks/{alert_id}/review` | Review a bottleneck alert |
+| `POST` | `/recommendations/scan` | Generate operational recommendations |
+| `GET` | `/recommendations` | List recommendations |
+| `POST` | `/recommendations/{recommendation_id}/review` | Review a recommendation |
+| `GET` | `/clinical-alerts` | Evidence-backed warning-sign alerts |
+| `POST` | `/clinical-alerts/{alert_id}/review` | Review a clinical alert |
+| `GET` | `/observations` | List synthetic observation sets |
+| `POST` | `/observations` | Create an observation set |
+| `POST` | `/observations/extract` | Optional AgentRouter free-text extraction (`requires_human_review: true`) |
+| `GET` | `/triage-sources` | Triage source metadata |
+| `GET` | `/public-health-context` | Synthetic public-health context |
+| `POST` | `/simulations` | Run an operational simulation |
+| `GET` | `/simulations/{scenario_id}` | Retrieve a simulation |
+| `GET` | `/metric-snapshots` | List metric snapshots |
+| `POST` | `/metric-snapshots` | Record a metric snapshot |
+
+### Audit
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/v1/audit/events` | Recent audit events, filterable by entity type/id (shift lead/admin) |
 
 ---
 
-## 🧪 Testing
+## Testing & Verification
 
 ```bash
-# API smoke tests (in-memory, no DB required)
-pytest
+# Mock FHIR export + read-only MCP tools (requires DB)
+uv run --project backend python scripts/test_phase5.py
 
-# FHIR adapter + MCP tools
-python scripts/test_phase5.py
+# Agent proposal and human-approval safety invariant (requires DB)
+uv run --project backend python scripts/test_phase6.py
 
-# Agent safety guardrails (human-in-loop enforced)
-python scripts/test_phase6.py
-
-# Frontend production build
+# Frontend type-check and production build
 npm run build
 ```
 
-### Test Coverage
+### Safety invariants under test
 
-- **Phase 5**: Mock FHIR adapter export, read-only MCP tools (queue digest, pending reviews)
-- **Phase 6**: Agent proposes slot → invariant check (does NOT auto-approve) → explicit clinician sign-off
-- **Safety invariant**: AI agent **cannot** autonomously approve appointment requests; human clinician sign-off is mandatory
+- **Phase 5**: Mock FHIR export, read-only MCP tools (queue digest, pending reviews).
+- **Phase 6**: Agent proposes a booking → invariant check confirms the request is **not** approved → explicit clinician decision is logged against a named user.
+- **Core invariant**: the agent cannot autonomously approve appointment requests; human clinician sign-off is mandatory.
+- **Queue invariant**: ordering is deterministic and explainable — fast-track, wait cap, weighted score, then stable tie-breakers.
+
+See [docs/EVALS.md](docs/EVALS.md) for the evaluation plan. It records test design, not measured results.
 
 ---
 
-## 🛡️ Safety & Compliance
+## Safety & Compliance
 
-|message| Concern | Handling |
-
-| Patient data | Synthetic only; never use real patient info |
-| Autonomous triage | **Prohibited** — no auto-triage or auto-approval |
-| Audit trail | Immutable audit event logging |
+| Concern | Handling |
+|---------|----------|
+| Patient data | Synthetic only; never use real patient information |
+| Autonomous triage | **Prohibited** — no auto-triage, auto-prioritisation, or auto-approval |
+| Clinical warning signs | Surfaced with supporting observations for nurse validation |
+| Queue changes | Authorized, deterministic, and audit logged |
+| Appointment decisions | Named clinician approval with reason, captured in the audit trail |
 | PII | No real PII in code, commits, issues, or demos |
+| Integration | Mock FHIR adapter only; no live HMIS integration |
 | Privacy docs | [docs/DATA_AND_PRIVACY.md](docs/DATA_AND_PRIVACY.md) |
 
 ---
 
-## 🔒 Neon Database Integration
+## Neon Database Integration
 
 ```mermaid
 flowchart LR
-    APP["🐍 FastAPI App"] -->|Pooled Connection| POOLER["🔗 ep-xxx-pooler.aws.neon.tech"]
-    APP -->|Migrations| DIRECT["🔗 ep-xxx.aws.neon.tech"]
-    POOLER --> NEON[(Neon Postgres)]
+    APP["FastAPI app"] -->|"pooled connection"| POOLER["ep-xxx-pooler.aws.neon.tech"]
+    APP -->|"migrations"| DIRECT["ep-xxx.aws.neon.tech"]
+    POOLER --> NEON[("Neon Postgres")]
     DIRECT --> NEON
 
     style APP fill:#43e97b,stroke:#38f9d7
@@ -349,67 +529,77 @@ flowchart LR
     style NEON fill:#00E599,stroke:#38ef7d
 ```
 
-### Neon Setup
+### Configuration
+
+Set the connection strings in `.env`:
+
+- `DATABASE_URL` → pooled connection for application traffic.
+- `DATABASE_URL_UNPOOLED` → direct connection for tooling and migrations when the pooler does not support DDL.
+
+Alembic reads `DATABASE_URL` through `backend/core/config.py`. Point it at the direct URL when running migrations if your pooler rejects DDL or advisory locks, then switch it back for normal application traffic.
+
+Use a separate Neon branch per developer or per feature to keep schema changes isolated.
+
+### Branching workflow
 
 ```bash
-# Install and authenticate
-npm i -g neon@latest
-neon login
-
-# Deploy (provisions Postgres, pulls .env vars)
-neon deploy --project-id noisy-snow-54213670 --branch production
+# Create a branch from the Neon console or CLI, then point the environment at it
+uv run --project backend alembic -c backend/alembic.ini upgrade head
+# Delete the branch when the work is merged
 ```
 
-The `.env` file auto-populates with:
-- `DATABASE_URL` → pooled connection (for app traffic)
-- `DATABASE_URL_UNPOOLED` → direct connection (for migrations)
-- `NEON_BRANCH` → `production`
-
-### Branching Workflow
-
-```
-neon checkout -b feature-branch        # Create isolated branch
-neon deploy --branch feature-branch    # Deploy schema changes
-neon branches delete feature-branch    # Cleanup when done
-```
+`neon.ts` configures Neon branch compute sizing, TTL, and suspend-on-idle behaviour. It contains no connection strings or credentials.
 
 ---
 
-## 📊 Data & Privacy
+## Data & Privacy
 
-- **Synthetic data only** — no real patient identifiers or PHI
-- **No persistent file storage** — all data lives in PostgreSQL
-- **Audit logged** — every triage decision, queue call, and appointment decision creates an immutable audit event
-- **Passwords** — argon2 password hashing, configurable expiration
+- **Synthetic data only** — no real patient identifiers or PHI.
+- **No persistent file storage** — application data lives in PostgreSQL.
+- **Audit logged** — check-in, patient calls, triage completion, appointment decisions, and approved-booking synchronization create audit events.
+- **Audit access** — restricted to `SHIFT_LEAD` and `ADMIN`.
+- **Passwords** — argon2 hashing; JWT-based sessions.
+- **Retention and controller** — not yet finalized; the pilot facility and hosting environment have not been selected.
 
-See [docs/DATA_AND_PRIVACY.md](docs/DATA_AND_PRIVACY.md) for details.
-
----
-
-## 🤖 Planned (Not Yet Implemented)
-
-| Feature | Status | Docs |
-|---------|--------|------|
-| Local AI agent (Ollama) | 🔴 Planned | [docs/MZIMA_SYSTEM_DESIGN.md](docs/MZIMA_SYSTEM_DESIGN.md) |
-| MCP appointment routing | 🔴 Planned | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
-| Appointment slots | 🔴 Planned | — |
-| Agent proposal/commit | 🔴 Planned | Phase 6 tests are scaffolding |
+See [docs/DATA_AND_PRIVACY.md](docs/DATA_AND_PRIVACY.md) for the data policy and retention design.
 
 ---
 
-## 📝 Documentation
+## Roadmap
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| MCP appointment-slot retrieval | Planned | Read-only tools for available slots |
+| MCP transport for `ReadOnlyMzimaMCP` | Planned | Currently an in-process Python tool layer; no MCP protocol server yet |
+| MCP routing proposal tool | Planned | Deterministic eligibility checks plus grounded rationale |
+| Clinician commit with one-time approval token | Planned | Idempotent, audited write path |
+| Agent proposal/commit hardening | In progress | Proposal + guardrail scaffolding exists in `backend/agent/` |
+| Unify agent proposal status with the clinician review queue | Planned | Review queue currently filters `PENDING_REVIEW`; agent proposals use `PROPOSED_BY_AGENT` |
+| Local/in-country model deployment | Planned | Data-sovereignty requirement for any pilot |
+| Live HMIS/FHIR integration | Not started | Mock adapter boundary is in place |
+| Concurrent-safe token generation | Planned | Replace count-based generation with a sequence or lock |
+
+---
+
+## Documentation
 
 | Doc | Purpose |
 |-----|---------|
 | [docs/MZIMA_SYSTEM_DESIGN.md](docs/MZIMA_SYSTEM_DESIGN.md) | Product requirements and acceptance criteria |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Component boundaries & data model |
-| [docs/DATA_AND_PRIVACY.md](docs/DATA_AND_PRIVACY.md) | Synthetic data policy, retention |
-| [docs/EVALS.md](docs/EVALS.md) | Test plan (not measured results) |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Component boundaries, trust boundaries, and data model |
+| [docs/BACKEND_TECHNICAL_GUIDE.md](docs/BACKEND_TECHNICAL_GUIDE.md) | Backend setup and endpoint details |
 | [docs/FRONTEND_DESIGN.md](docs/FRONTEND_DESIGN.md) | Frontend design and scope |
+| [docs/FRONTEND_INTEGRATION_GUIDE.md](docs/FRONTEND_INTEGRATION_GUIDE.md) | Frontend ↔ backend integration |
+| [docs/DATA_AND_PRIVACY.md](docs/DATA_AND_PRIVACY.md) | Synthetic data policy and retention |
+| [docs/EVALS.md](docs/EVALS.md) | Evaluation plan (not measured results) |
+| [docs/CLOUD_DEPLOYMENT_AND_DATAFLOW.md](docs/CLOUD_DEPLOYMENT_AND_DATAFLOW.md) | Proposed deployment and data-flow path |
+| [docs/TECH_STACK.md](docs/TECH_STACK.md) | Stack choices and constraints |
+| [docs/TEAM_ROLES.md](docs/TEAM_ROLES.md) | Team responsibilities |
+| [docs/IMPLEMENTATION_CHANGELOG.md](docs/IMPLEMENTATION_CHANGELOG.md) | Implemented queue, flow, audit, and integration work |
 
 ---
 
-## 📜 Licence
+## Licence
 
 See [LICENSE](LICENSE). All code and documentation are provided as-is without warranty.
 
@@ -417,6 +607,6 @@ See [LICENSE](LICENSE). All code and documentation are provided as-is without wa
 
 <div align="center">
 
-**Built with passion and scientific rigor 🔬**
+**Mzima — Connecting Healthcare Systems. Strengthening Human-Centred Care.**
 
 </div>
