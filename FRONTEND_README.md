@@ -1,6 +1,6 @@
 # Mzima Frontend
 
-React + TypeScript frontend for the local Mzima API prototype. The interface has a patient appointment-request page, a staff walk-in queue/front desk, and an authenticated clinician review inbox.
+React + TypeScript frontend for the local Mzima API prototype. The interface has a public landing page, guided patient appointment-request chat, staff walk-in queue/front desk, and authenticated clinician review inbox.
 
 ## Start locally
 
@@ -17,7 +17,7 @@ Open `http://localhost:5173`. The Vite development server proxies `/api`, `/heal
 
 The frontend calls the implemented `/api/v1` routes for staff login, appointment-request submission and review, walk-in queue retrieval, check-in, call, and staff triage-record updates. Staff access tokens are held in session storage and sent as bearer tokens. Server-side role checks remain authoritative.
 
-The current appointment-request API accepts only `patient_identifier` and `requested_specialty`; the patient page therefore sends only those fields and directs prototype users to use synthetic references. The backend does not yet expose agent proposals/evidence, appointment slots, request history, or a booking confirmation endpoint. The clinician page explicitly presents this limitation rather than inventing clinical recommendations. The backend decision endpoint currently supports approve/reject behavior; this UI does not offer a modify action that the API cannot safely persist.
+The patient flow accepts only `patient_identifier` and `requested_specialty`, uses synthetic references, previews before sending, and displays the API receipt. It is a guided UI, not a live AI chat service. The clinician inbox displays deterministic slot evidence and allows a shift lead/admin to reject or approve and book the proposed slot. No diagnosis or clinical priority is generated. The interface is English-only; voice input, model proposals, request history, and booking notifications are not implemented. Clinicians cannot edit a proposal because no edit contract exists.
 
 Walk-in endpoints are the existing prototype queue workflow, separate from the planned agentic appointment-routing workflow. This interface is for synthetic data and is not for live care.
 

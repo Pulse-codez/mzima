@@ -12,10 +12,24 @@ export interface AppointmentRequest {
   requested_specialty: string;
   status: string;
   created_at: string;
+<<<<<<< HEAD:frontend/src/api.ts
+  proposed_slot_id: string | null;
+  booked_slot_id: string | null;
+  agent_proposal: {
+    tool?: string;
+    status?: string;
+    specialty?: string;
+    slot_id?: string | null;
+    starts_at?: string;
+    evidence?: string[];
+    rule_version?: string;
+  } | null;
+=======
   integration_status?: string;
   external_system?: string | null;
   external_reference?: string | null;
   integrated_at?: string | null;
+>>>>>>> upstream/main:src/api.ts
 }
 
 export interface QueueVisit {

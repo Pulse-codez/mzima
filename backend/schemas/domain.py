@@ -1,14 +1,25 @@
 import uuid
 from datetime import datetime
+from typing import Literal
+
 from pydantic import BaseModel, Field
 from backend.models.domain import RoleEnum, VisitStatusEnum
 
 
 # --- Walk-in Schemas ---
 class VisitCreate(BaseModel):
+<<<<<<< HEAD:app/schemas/domain.py
+    age_band: Literal["under_5", "adult", "over_65"] = Field(
+        ..., description="'under_5', 'adult', or 'over_65'"
+    )
+    visit_type: Literal["new", "review", "refill"] = Field(
+        ..., description="'new', 'review', or 'refill'"
+    )
+=======
     patient_identifier: str = Field(..., min_length=1, max_length=100)
     age_band: str = Field(..., description="'under_5', 'adult', or 'over_65'")
     visit_type: str = Field(..., description="'new', 'review', or 'refill'")
+>>>>>>> upstream/main:backend/schemas/domain.py
     red_flags: dict[str, bool] = Field(default_factory=dict)
 
 
@@ -57,8 +68,10 @@ class TriageUpdate(BaseModel):
 
 # --- Appointment Schemas ---
 class AppointmentRequestCreate(BaseModel):
-    patient_identifier: str
-    requested_specialty: str
+    model_config = {"str_strip_whitespace": True}
+
+    patient_identifier: str = Field(..., min_length=1, max_length=100)
+    requested_specialty: str = Field(..., min_length=1, max_length=100)
 
 
 class AppointmentRequestResponse(BaseModel):
@@ -67,18 +80,37 @@ class AppointmentRequestResponse(BaseModel):
     requested_specialty: str
     status: str
     created_at: datetime
+<<<<<<< HEAD:app/schemas/domain.py
+    proposed_slot_id: uuid.UUID | None = None
+    booked_slot_id: uuid.UUID | None = None
+    agent_proposal: dict = Field(default_factory=dict)
+
+    class Config:
+        from_attributes = True
+
+
+class AppointmentSlotResponse(BaseModel):
+    id: uuid.UUID
+    specialty: str
+    starts_at: datetime
+    capacity: int
+    booked_count: int
+=======
     integration_status: str = "NOT_SYNCED"
     external_system: str | None = None
     external_reference: str | None = None
     integrated_at: datetime | None = None
+>>>>>>> upstream/main:backend/schemas/domain.py
 
     class Config:
         from_attributes = True
 
 
 class ClinicianDecisionCreate(BaseModel):
-    decision: str = Field(..., description="'APPROVE', 'REJECT', or 'MODIFY'")
-    reason: str | None = None
+    model_config = {"str_strip_whitespace": True}
+
+    decision: Literal["APPROVE", "REJECT"] = Field(..., description="Explicit clinician decision")
+    reason: str = Field(..., min_length=1, max_length=2000)
 
 
 class ClinicianDecisionResponse(BaseModel):
