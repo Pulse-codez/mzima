@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
+<<<<<<< HEAD
 from app.core.config import settings
 from app.core.security import get_password_hash
 from app.db.session import SessionLocal
@@ -14,6 +15,12 @@ from app.models.domain import (
     Visit,
     VisitStatusEnum,
 )
+=======
+from backend.db.session import SessionLocal
+from backend.models.domain import RoleEnum, User, Visit, VisitStatusEnum
+
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+>>>>>>> upstream/main
 
 
 DEMO_ACCOUNTS = (

@@ -1,6 +1,10 @@
 # Mzima Evaluation Plan
 
+<<<<<<< HEAD
 **Status: automated checks added; execution not verified in this environment.** The current executable tests evaluate the deterministic synthetic slot workflow, not an LLM or MCP server. Do not report a PASS until `python -m pytest -q` completes successfully. No real patient data is used.
+=======
+**Status: schema implemented, awaiting agent integration.** The LangGraph typed task state schema (task 1.1) is now implemented in `app/agent/schemas.py`. Synthetic eval tasks 1-10 can now be run with tool traces. Record model/runtime version, task input, tool trace, expected outcome, actual outcome and PASS/FAIL when implemented. Do not use real patient data.
+>>>>>>> upstream/main
 
 | # | Synthetic task | Required pass condition | Test / result |
 |---|---|---|---|
@@ -13,8 +17,13 @@
 
 ## Unfixed failure and next experiment
 
+<<<<<<< HEAD
 **Known gap:** automated workflow tests have been added but could not be run here, so there are no pass/fail results. The model/MCP recovery, injection, and data-egress evaluations remain unimplemented.  
 **Next experiment:** run the four pytest cases and record their actual output. Then implement the selected local model and MCP transport behind explicit trust boundaries before evaluating model behavior; do not imply that deterministic rule tests validate a model.
+=======
+**Known failure:** the typed task state schema (task 1.1) is implemented but the LangGraph agent, MCP server, and REST API are not yet wired together. None of the ten eval tasks has pass/fail evidence and the submission requirement is not met.
+**Next experiment:** build the smallest vertical slice with the typed task state schema, integrate with the LangGraph state machine and MCP server, then run these ten tasks with tool traces visible, recording actual PASS/FAIL results. Keep at least one genuine unresolved model failure in the submission report, explain its impact and propose a focused follow-up evaluation; never manufacture a failure to satisfy the requirement.
+>>>>>>> upstream/main
 
 ## Reporting rules
 

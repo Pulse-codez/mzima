@@ -1,8 +1,10 @@
 TAZ_TASKS.md
+# Major transformation plan (local working document)
+MAJOR.md
 
-# Local configuration and secrets
 .env
 .env.*
+*.env.local
 !.env.example
 
 # Python-generated files
@@ -15,6 +17,7 @@ __pycache__/
 venv/
 
 # Frontend dependencies and generated builds
+<<<<<<< HEAD
 frontend/node_modules/
 frontend/dist/
 frontend/*.tsbuildinfo
@@ -25,3 +28,30 @@ frontend/vite.config.d.ts
 *.db
 *.sqlite
 *.sqlite3
+=======
+node_modules/
+dist/
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+htmlcov/
+.pytest_cache/
+.neon
+=======
+.env
+*.env.local
+>>>>>>> origin/feat/taz
+>>>>>>> upstream/main
