@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from '../../router';
 import { PasswordField } from './PasswordField';
 import { useAuth } from '../../auth/AuthContext';
 import { AuthFailure } from '../../auth/api';
@@ -65,7 +65,8 @@ export function LoginForm() {
       try {
         const user = await login(username, password);
         setSuccess(true);
-        const pendingFrom = (location.state as { from?: string } | null)?.from;
+        const queryFrom = location.query.from;
+        const pendingFrom = Array.isArray(queryFrom) ? queryFrom[0] : queryFrom;
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         window.setTimeout(() => {
           if (pendingFrom) {
@@ -94,7 +95,7 @@ export function LoginForm() {
         setSubmitting(false);
       }
     },
-    [disabled, username, password, login, location.state, navigate],
+    [disabled, username, password, login, location.query.from, navigate],
   );
 
   if (success) {

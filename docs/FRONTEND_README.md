@@ -7,11 +7,11 @@ React + TypeScript frontend for the local Mzima API prototype. The interface has
 Follow the complete setup in the repository [README](README.md), including Neon PostgreSQL configuration and API startup. The active frontend lives in `src/` and is started from the repository root:
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
-Open `http://localhost:5173`. The Vite development server proxies `/api`, `/health`, and `/ready` to `http://127.0.0.1:8000`. Set `MZIMA_API_URL` in the frontend environment if the backend listens elsewhere.
+Open `http://localhost:3000`. The Next.js development server proxies `/api`, `/health`, and `/ready` to `http://127.0.0.1:8000`. Set `MZIMA_API_URL` in the frontend environment if the backend listens elsewhere.
 
 ## API wiring and current limits
 
@@ -23,4 +23,4 @@ Walk-in endpoints are the existing prototype queue workflow, separate from the p
 
 ## Build
 
-Run `npm run build` to type-check and create the production bundle in `dist/`.
+Run `pnpm build` to type-check and create the production bundle in `.next/`.

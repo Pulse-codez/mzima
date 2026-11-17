@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '../../router';
 import credits from '../../data/photo-credits.json';
 import { ImageWithFallback } from '../ui/ImageWithFallback';
 

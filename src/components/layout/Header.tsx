@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '../../router';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, BookOpen, Sparkles, Menu, X, Sun, Moon } from 'lucide-react';
 

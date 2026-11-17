@@ -27,9 +27,9 @@ Mzima is a proposed healthcare workflow and interoperability platform designed f
 
 At its core, Mzima connects **outpatient queue management**, **appointment coordination**, and **clinic scheduling** workflows while maintaining clear boundaries between automated operations and human clinical authority. Rather than replacing healthcare professionals, Mzima aims to reduce administrative friction, improve access to operational information, and provide accountable workflows that support healthcare workers.
 
-Follow [backend/BACKEND_README.md](backend/BACKEND_README.md) for Python setup, database migrations, the API, and synthetic test helpers. The active frontend is in [`src/`](src/) and is run from the root `package.json`; Vite proxies API requests to `http://127.0.0.1:8000` by default.
+Follow [backend/BACKEND_README.md](backend/BACKEND_README.md) for Python setup, database migrations, the API, and synthetic test helpers. The active Next.js frontend is in [`src/`](src/) and is run from the root `package.json`; Next proxies API requests to `http://127.0.0.1:8000` by default.
 
-This repository is a **synthetic-data prototype** with a FastAPI backend, React frontend, a local stdio MCP server, and an explicit clinician approval gate. Operational MCP tools are read-only; appointment tools can look up slots and create proposals, while only an authorized clinician can approve or reject. Use synthetic data only; it is not ready for live care or deployment. Run `TEST_DATABASE_URL=<isolated-postgres-url> uv run --project backend pytest -v` for workflow tests and `npm run build` for the frontend production check. Model behavior still requires separate evaluation; see [docs/EVALS.md](docs/EVALS.md).
+This repository is a **synthetic-data prototype** with a FastAPI backend, React frontend, a local stdio MCP server, and an explicit clinician approval gate. Operational MCP tools are read-only; appointment tools can look up slots and create proposals, while only an authorized clinician can approve or reject. Use synthetic data only; it is not ready for live care or deployment. Run `TEST_DATABASE_URL=<isolated-postgres-url> uv run --project backend pytest -v` for workflow tests and `pnpm build` for the frontend production check. Model behavior still requires separate evaluation; see [docs/EVALS.md](docs/EVALS.md).
 
 
 ## The Problem We Are Solving
@@ -277,16 +277,16 @@ uv run --project backend uvicorn backend.main:app --reload --host 127.0.0.1 --po
 In a separate terminal:
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
-Open `http://localhost:5173`. Vite proxies `/api`, `/health`, and `/ready` to `http://127.0.0.1:8000` by default; set `MZIMA_API_URL` to point elsewhere.
+Open `http://localhost:3000`. Next.js proxies `/api`, `/health`, and `/ready` to `http://127.0.0.1:8000` by default; set `MZIMA_API_URL` to point elsewhere.
 
 ### Quick checks
 
 ```bash
-npm run build   # Type-check and build the frontend
+pnpm build   # Type-check and build the frontend
 ```
 
 Backend verification scripts require a reachable database:
@@ -486,7 +486,7 @@ uv run --project backend python scripts/test_phase5.py
 uv run --project backend python scripts/test_phase6.py
 
 # Frontend type-check and production build
-npm run build
+pnpm build
 ```
 
 ### Safety invariants under test

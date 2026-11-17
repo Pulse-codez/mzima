@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate, useLocation } from '../router';
 import { useAuth } from './AuthContext';
 import type { ApiRole } from '../types';
 
@@ -16,7 +16,7 @@ export function RequireAuth({ children, role }: { children: React.ReactNode; rol
   }
 
   if (status !== 'authenticated' || !user) {
-    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+    return <Navigate to={`/login?from=${encodeURIComponent(location.pathname)}`} replace />;
   }
 
   if (role && user.role !== role && user.role !== 'admin') {

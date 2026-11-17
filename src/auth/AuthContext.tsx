@@ -6,7 +6,7 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../router';
 import { fetchCurrentUser, loginRequest } from './api';
 import type { ApiUser } from '../api';
 

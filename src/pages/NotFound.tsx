@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../router';
 import React from 'react';
 
 export function NotFound() {

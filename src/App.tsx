@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useLocation } from './router';
 import { AuthProvider } from './auth/AuthContext';
 import { RequireAuth } from './auth/RequireAuth';
 import { Footer } from './components/layout/Footer';
@@ -18,7 +18,7 @@ import { NurseDashboard } from './pages/nurse/NurseDashboard';
 import { ShiftLeadDashboard } from './pages/shiftlead/ShiftLeadDashboard';
 import { NotFound } from './pages/NotFound';
 
-function Layout({ children, signUp = false }: { children: React.ReactNode; signUp?: boolean }) {
+function Layout({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Header />
@@ -29,25 +29,22 @@ function Layout({ children, signUp = false }: { children: React.ReactNode; signU
 }
 
 export default function App() {
-  return (
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          <Route path="/" element={<Layout><Home /></Layout>} />
-          <Route path="/how-it-works" element={<Layout><HowItWorks /></Layout>} />
-          <Route path="/story" element={<Layout><Story /></Layout>} />
-          <Route path="/sign-up" element={<Layout signUp><SignUp /></Layout>} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/extract" element={<RequireAuth><Extract /></RequireAuth>} />
-          <Route path="/clerk-login" element={<ClerkLogin />} />
-          <Route path="/nurse-login" element={<NurseLogin />} />
-          <Route path="/shiftlead-login" element={<ShiftLeadLogin />} />
-          <Route path="/visits" element={<RequireAuth role="clerk"><ClerkDashboard /></RequireAuth>} />
-          <Route path="/triage" element={<RequireAuth role="nurse"><NurseDashboard /></RequireAuth>} />
-          <Route path="/review" element={<RequireAuth role="shift_lead"><ShiftLeadDashboard /></RequireAuth>} />
-          <Route path="*" element={<Layout><NotFound /></Layout>} />
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
-  );
+  const { pathname } = useLocation();
+  let page: React.ReactNode;
+  switch (pathname) {
+    case '/': page = <Layout><Home /></Layout>; break;
+    case '/how-it-works': page = <Layout><HowItWorks /></Layout>; break;
+    case '/story': page = <Layout><Story /></Layout>; break;
+    case '/sign-up': page = <Layout><SignUp /></Layout>; break;
+    case '/login': page = <Login />; break;
+    case '/extract': page = <RequireAuth><Extract /></RequireAuth>; break;
+    case '/clerk-login': page = <ClerkLogin />; break;
+    case '/nurse-login': page = <NurseLogin />; break;
+    case '/shiftlead-login': page = <ShiftLeadLogin />; break;
+    case '/visits': page = <RequireAuth role="clerk"><ClerkDashboard /></RequireAuth>; break;
+    case '/triage': page = <RequireAuth role="nurse"><NurseDashboard /></RequireAuth>; break;
+    case '/review': page = <RequireAuth role="shift_lead"><ShiftLeadDashboard /></RequireAuth>; break;
+    default: page = <Layout><NotFound /></Layout>;
+  }
+  return <AuthProvider>{page}</AuthProvider>;
 }

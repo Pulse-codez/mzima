@@ -102,7 +102,7 @@ async function request<T>(
     headers.set('Authorization', `Bearer ${token}`);
   }
 
-  const apiBase = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
+  const apiBase = (process.env.NEXT_PUBLIC_API_URL ?? '').replace(/\/$/, '');
   const response = await fetch(`${apiBase}${path}`, { ...options, headers, credentials: 'include' });
   if (!response.ok) {
     let message = `Request failed (${response.status})`;

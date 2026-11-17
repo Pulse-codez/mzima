@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../router';
 import React, { useState, useMemo, useEffect } from 'react';
 import credits from '../data/photo-credits.json';
 import { ImageWithFallback } from '../components/ui/ImageWithFallback';
