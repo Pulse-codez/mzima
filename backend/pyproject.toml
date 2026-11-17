@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "mzima-backend"
 version = "0.1.0"
 description = "Capacity-aware queue management & clinic triage API"
-readme = "README.md"
+readme = "BACKEND_README.md"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.110.0",
@@ -32,7 +32,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-where = ["."]
+where = [".."]
 include = ["backend*"]
 exclude = ["node_modules*", "*.egg-info*", "dist*", "venv*", ".venv*", "__pycache__*"]
 

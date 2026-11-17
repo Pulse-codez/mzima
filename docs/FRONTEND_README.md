@@ -4,11 +4,11 @@ React + TypeScript frontend for the local Mzima API prototype. The interface has
 
 ## Start locally
 
-Follow the complete setup in the repository [README](../README.md), including PostgreSQL configuration and API startup. From the repository root, start the frontend in a second terminal:
+Follow the complete setup in the repository [README](README.md), including Neon PostgreSQL configuration and API startup. The active frontend lives in `src/` and is started from the repository root:
 
 ```bash
-npm --prefix frontend install
-npm --prefix frontend run dev
+npm install
+npm run dev
 ```
 
 Open `http://localhost:5173`. The Vite development server proxies `/api`, `/health`, and `/ready` to `http://127.0.0.1:8000`. Set `MZIMA_API_URL` in the frontend environment if the backend listens elsewhere.

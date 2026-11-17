@@ -1,7 +1,6 @@
 import os
 from logging.config import fileConfig
-from sqlalchemy import Numeric, engine_from_config, pool
-from sqlalchemy.dialects.postgresql import UUID as PostgreSQLUUID
+from sqlalchemy import engine_from_config, pool
 from alembic import context
 
 # Import settings and Base models
@@ -11,8 +10,9 @@ import backend.models  # Ensures all models are registered
 
 config = context.config
 
-# Overwrite sqlalchemy.url dynamically from app settings
-database_url = settings.DATABASE_URL
+# Overwrite sqlalchemy.url dynamically from app settings. Neon recommends the
+# direct endpoint for migrations; the pooled endpoint remains the app default.
+database_url = settings.DATABASE_URL_UNPOOLED or settings.DATABASE_URL
 if database_url.startswith("postgresql://"):
     database_url = database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
 config.set_main_option("sqlalchemy.url", database_url)
@@ -23,15 +23,6 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
-def compare_type(context, inspected_column, metadata_column, inspected_type, metadata_type):
-    if (
-        context.dialect.name == "sqlite"
-        and isinstance(inspected_type, Numeric)
-        and isinstance(metadata_type, PostgreSQLUUID)
-    ):
-        return False
-    return None
-
 def run_migrations_offline() -> None:
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
@@ -39,7 +30,6 @@ def run_migrations_offline() -> None:
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
-        compare_type=compare_type,
     )
 
     with context.begin_transaction():
@@ -56,7 +46,6 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            compare_type=compare_type,
         )
 
         with context.begin_transaction():

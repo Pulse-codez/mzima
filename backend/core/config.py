@@ -17,7 +17,10 @@ class Settings(BaseSettings):
     POSTGRES_USER: str = "mzima_user"
     POSTGRES_PASSWORD: str = "asdf"
     POSTGRES_DB: str = "mzima_db"
-    DATABASE_URL: str = "postgresql://mzima_user:asdf@localhost:5432/mzima_db"
+    DATABASE_URL: str
+    # Optional direct Neon connection used for migrations and other session-bound tooling.
+    # Application traffic should continue to use the pooled DATABASE_URL.
+    DATABASE_URL_UNPOOLED: str | None = None
 
     # Security, with compatibility for the consolidated environment style.
     SECRET_KEY: str = ""

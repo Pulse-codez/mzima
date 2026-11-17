@@ -1,11 +1,11 @@
 from collections.abc import Generator
 from datetime import datetime, timedelta
+import os
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
 from backend.api.deps import get_db
 from backend.core.security import get_password_hash
@@ -17,10 +17,12 @@ import backend.models
 
 @pytest.fixture
 def test_session_factory():
+    database_url = os.environ.get("TEST_DATABASE_URL")
+    if not database_url:
+        pytest.fail("TEST_DATABASE_URL must point to an isolated PostgreSQL database")
     engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
+        database_url,
+        pool_pre_ping=True,
     )
     session_factory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base.metadata.create_all(bind=engine)

@@ -1,222 +1,68 @@
-# Mzima | Tech Stack
+# Mzima technology stack
 
-Five-day prototype. Every choice maps directly to the design constraints:
-patient data sovereignty, clinician approval gate, audit trail, and a one-command start.
+This document describes the code that exists in this repository. Future integrations are listed separately so they are not confused with implemented components.
 
----
+## Runtime stack
 
-## Overview
-
-| Layer | Technology |
-|---|---|
-| Agent orchestration | LangGraph (Python) |
-| MCP server | FastMCP (Python) |
-| REST API | FastAPI (Python) |
-| Database | Neon (PostgreSQL, serverless) |
-| Schema / migrations | Prisma (TypeScript) |
-| Frontend | Next.js 15 (App Router, TypeScript) |
-| Styling | Tailwind CSS + shadcn/ui |
-| Auth | NextAuth.js v5 |
-| LLM gateway | Agent Router (https://agentrouter.org) |
-| Voice | ElevenLabs |
-| Validation | Pydantic v2 (backend) / Zod (frontend) |
-| Local dev | Docker Compose |
-
----
-
-## Backend: FastAPI
-
-FastAPI runs the REST API, handles authentication, issues approval tokens, and writes the audit log. LangGraph and the MCP server are Python too, so keeping everything in one process avoids unnecessary service boundaries for the prototype.
-
-**Routes:**
-```
-POST /api/appointment-requests
-GET  /api/clinic/review-queue
-POST /api/appointment-requests/{id}/decision
-GET  /api/appointments/{id}
-POST /api/integrations/clinic/bookings
-```
-
-**Packages:**
-```
-fastapi
-uvicorn[standard]
-pydantic>=2
-python-jose[cryptography]   # JWT
-passlib[bcrypt]             # password hashing
-asyncpg                     # Postgres driver for Neon
-python-dotenv
-httpx                       # outbound HTTP for clinic adapter
-```
-
-Schema and migrations live in Prisma (Next.js side). FastAPI queries the same Neon database directly via `asyncpg`.
-
----
-
-## Agent: LangGraph + FastMCP
-
-LangGraph runs the appointment workflow as an explicit state machine: intake, slot lookup, proposal, clinician review, commit. Each step is a named node with a defined input and output. The model cannot skip steps, approve its own proposals, or write directly to the booking queue.
-
-FastMCP exposes three tools the agent calls:
-
-| Tool | What it does |
-|---|---|
-| `get_appointment_slots` | Reads available slots from the database |
-| `score_and_propose_route` | Scores the request against facility rules and saves a pending proposal |
-| `review_and_commit` | Commits a clinician-approved decision with identity, reason, and audit record |
-
-Every tool call is logged before it returns.
-
-**Packages:**
-```
-langgraph
-langchain-openai        # OpenAI-compatible SDK pointed at Agent Router
-fastmcp
-openai                  # base SDK for Agent Router OpenAI surface
-```
-
----
-
-## Database: Neon
-
-Neon is a serverless Postgres provider. Each team member gets their own database branch in seconds from the Neon dashboard, so there is no shared dev database to step on. The connection string is standard Postgres, so Prisma, FastAPI, and the read-only MCP server all connect the same way.
-
-**Tables:**
-```
-appointment_requests    patient intake, structured fields, status
-appointment_slots       facility-seeded synthetic availability
-proposals               pending agent proposals (never a live queue change)
-clinician_decisions     approved / edited / rejected, with identity and reason
-audit_events            every tool call: actor, inputs, output, timestamp
-```
-
----
-
-## Schema and Migrations: Prisma
-
-Prisma owns the schema definition and runs migrations. The schema file lives in the Next.js codebase (`prisma/schema.prisma`) and is the single source of truth for the database structure. FastAPI reads from and writes to the same tables via raw `asyncpg` queries.
-
-**Packages:**
-```
-prisma                   # CLI and migration engine
-@prisma/client           # generated type-safe client
-@prisma/adapter-neon     # Neon serverless adapter
-@neondatabase/serverless # Neon HTTP driver
-```
-
-**Common commands:**
-```bash
-npx prisma db push           # apply schema changes without a migration file (prototype)
-npx prisma migrate dev       # create a named migration (when history matters)
-npx prisma studio            # visual data browser
-```
-
----
-
-## Frontend: Next.js 15
-
-Next.js serves both the patient request flow and the clinician review dashboard as separate route groups within one application. Server components handle data fetching for the clinician queue so the page renders with data on load rather than showing an empty table while a client-side request completes.
-
-**Route groups:**
-
-| Group | Path | Who uses it |
+| Layer | Technology | Location |
 |---|---|---|
-| Patient flow | `/(patient)/request` | Patients or clerk-assisted intake |
-| Clinician dashboard | `/(clinic)/review` | Authenticated clinicians and staff |
+| Frontend | React 18, TypeScript, Vite | `src/`, root `package.json` |
+| API | FastAPI, Uvicorn | `backend/main.py` |
+| Validation | Pydantic v2 | `backend/schemas/` |
+| Persistence | SQLAlchemy 2.x | `backend/models/`, `backend/db/` |
+| Database | Neon PostgreSQL | `DATABASE_URL` / `DATABASE_URL_UNPOOLED` |
+| Migrations | Alembic | `backend/migrations/`, `alembic.ini` |
+| Authentication | JWT, Argon2 password hashing | `backend/core/security.py` |
+| Optional tools | FastMCP over local stdio | `backend/mcp/server.py` |
+| Optional model gateway | AgentRouter, OpenAI-compatible API | `backend/services/flow/llm_extraction.py` |
 
-Auth is handled by NextAuth.js v5 with a credentials provider that validates against FastAPI's `/auth/token` endpoint. The session carries the user role (`patient`, `staff`, `clinician`) which gates both routes and UI actions.
+## Request path
 
-**Packages:**
-```
-next@15
-react@19
-typescript
-tailwindcss
-@shadcn/ui
-next-auth@5
-zod
-@tanstack/react-query        # data fetching and cache for the review queue
-sonner                       # toast notifications for approve / reject actions
-prisma
-@prisma/client
-@prisma/adapter-neon
-@neondatabase/serverless
-```
-
----
-
-## LLM Gateway: Agent Router
-
-Agent Router sits between the agent and the model. The agent sends a standard request; Agent Router routes it to the configured model. Credentials stay out of the agent code.
-
-| Surface | Base URL | Used by |
-|---|---|---|
-| OpenAI-compatible | `https://agentrouter.org/v1` | LangGraph via `langchain-openai` |
-| Anthropic-compatible | `https://agentrouter.org` | Claude Code, Kiro |
-
-One `AGENTROUTER_API_KEY` from the dashboard covers both. No Anthropic account needed.
-
-Default model: `claude-opus-4-8`
-
----
-
-## Voice: ElevenLabs
-
-ElevenLabs handles text-to-speech output for the patient-facing flow, for example reading back a confirmation or a hold message. It is not used for transcription or for any response that contains personal appointment details.
-
-Rules that apply before any ElevenLabs call:
-- The text passed to ElevenLabs must not contain patient names, symptoms, or appointment specifics
-- Generic prompts only: "Your request has been received. Please wait for staff."
-- Local TTS is the fallback if ElevenLabs is unavailable or the content rules cannot be met
-
-**Package:**
-```
-elevenlabs          # Python SDK for TTS output
+```text
+Browser (src/)
+  → Vite proxy in development
+  → FastAPI /api/v1
+  → endpoint handler
+  → domain service
+  → SQLAlchemy session
+  → Neon PostgreSQL
 ```
 
-For patient speech input (transcription), the prototype uses the browser Web Speech API locally. No patient audio leaves the browser.
+The frontend uses relative `/api` URLs. In development, Vite proxies them to `http://127.0.0.1:8000`; in deployment, configure the frontend/API origin through the hosting layer.
 
----
+## Backend components
 
-## Local Dev: Docker Compose
+| Component | Responsibility |
+|---|---|
+| `backend/api/v1/endpoints/auth.py` | Login and current-user endpoints |
+| `backend/api/v1/endpoints/queue.py` | Walk-in queue endpoints |
+| `backend/api/v1/endpoints/appointments.py` | Request, slot, review, and decision endpoints |
+| `backend/api/v1/endpoints/flow.py` | Operational metrics, alerts, simulations, and extraction |
+| `backend/services/queue/` | Queue ordering and workflow rules |
+| `backend/services/appointments/` | Slot lookup, proposal creation, and approval transaction |
+| `backend/services/flow/` | Capacity, alerts, simulations, and source ingestion |
+| `backend/services/audit/` | Audit event persistence |
+| `backend/models/` | Database entities and enums |
+| `backend/schemas/` | API contracts |
+| `backend/adapters/clinic/` | Mock external clinic integration |
+
+## Database rules
+
+Neon PostgreSQL is the only supported database.
+
+- `DATABASE_URL`: pooled connection for API requests.
+- `DATABASE_URL_UNPOOLED`: direct connection for Alembic migrations and session-bound tooling.
+- Schema changes are migration files under `backend/migrations/versions/`.
+- The browser and optional model tools never receive database credentials.
+
+Apply migrations with:
 
 ```bash
-docker compose up
+uv run --project backend alembic -c alembic.ini upgrade head
 ```
 
-| Service | Stack | Port |
-|---|---|---|
-| `api` | FastAPI + LangGraph agent | 8000 |
-| `web` | Next.js dev server | 3000 |
+## Implemented versus future work
 
-Neon replaces a local Postgres container. Set `DATABASE_URL` in `.env` and the services connect on start. Run `make seed` to populate synthetic slots and patient cases.
+Implemented: REST API, JWT authentication, role checks, queue workflow, appointment proposal/review/booking workflow, audit events, Neon persistence, mock clinic adapter, and local MCP tools.
 
----
-
-## Business Model
-
-Mzima is built for public health facilities in Kenya and similar markets where scheduling is done manually and appointment queues are managed by staff without digital tools.
-
-**How it generates revenue:**
-
-Mzima is licensed to clinics and hospital networks as a software service. Pricing is per facility per month, scaled by patient volume. There is no per-API-call cost passed to the facility.
-
-**Three tiers:**
-
-| Tier | Who it is for | What is included |
-|---|---|---|
-| Clinic | Single outpatient facility | Core booking workflow, clinician approval, audit log |
-| Network | Hospital group or county health system | Multi-facility, shared routing rules, aggregated reporting |
-| Enterprise | National health bodies or NGO partners | Custom HMIS integration, data residency controls, dedicated support |
-
-**Additional revenue paths:**
-
-- Setup and onboarding fee for HMIS adapter configuration at each new facility
-- Training and change management for clinical staff
-- A reporting add-on that gives facility managers anonymised throughput and wait-time data
-
-**Why this works in the target market:**
-
-Facilities pay for tools that reduce staff time spent on manual queue management and that give clinicians a documented, auditable record of routing decisions. Mzima does both. The audit trail also supports facilities working toward accreditation or donor reporting requirements.
-
-The prototype is built with synthetic data and no live patient records. Any commercial deployment requires facility approval, a data processing agreement, and in-country hosting for all patient data.
+Future work: live HMIS/FHIR integration, production deployment hardening, local/in-country model hosting, and any larger agent orchestration layer. The repository does not currently use Next.js, Prisma, or LangGraph.

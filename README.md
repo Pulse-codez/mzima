@@ -27,9 +27,9 @@ Mzima is a proposed healthcare workflow and interoperability platform designed f
 
 At its core, Mzima connects **outpatient queue management**, **appointment coordination**, and **clinic scheduling** workflows while maintaining clear boundaries between automated operations and human clinical authority. Rather than replacing healthcare professionals, Mzima aims to reduce administrative friction, improve access to operational information, and provide accountable workflows that support healthcare workers.
 
-Follow [backend/BACKEND_README.md](backend/BACKEND_README.md) for Python setup, database migrations, the API, and synthetic test helpers. The frontend is in [frontend/](frontend/) and its setup is documented in [FRONTEND_README.md](FRONTEND_README.md); Vite proxies API requests to `http://127.0.0.1:8000` by default.
+Follow [backend/BACKEND_README.md](backend/BACKEND_README.md) for Python setup, database migrations, the API, and synthetic test helpers. The active frontend is in [`src/`](src/) and is run from the root `package.json`; Vite proxies API requests to `http://127.0.0.1:8000` by default.
 
-This repository is a **synthetic-data prototype** with a FastAPI backend, React frontend, a local stdio MCP server, and an explicit clinician approval gate. Operational MCP tools are read-only; appointment tools can look up slots and create proposals, while only an authorized clinician can approve or reject. Use synthetic data only; it is not ready for live care or deployment. Run `uv run pytest -v` for workflow tests and `npm --prefix frontend run build` for the frontend production check. Model behavior still requires separate evaluation; see [docs/EVALS.md](docs/EVALS.md).
+This repository is a **synthetic-data prototype** with a FastAPI backend, React frontend, a local stdio MCP server, and an explicit clinician approval gate. Operational MCP tools are read-only; appointment tools can look up slots and create proposals, while only an authorized clinician can approve or reject. Use synthetic data only; it is not ready for live care or deployment. Run `TEST_DATABASE_URL=<isolated-postgres-url> uv run --project backend pytest -v` for workflow tests and `npm run build` for the frontend production check. Model behavior still requires separate evaluation; see [docs/EVALS.md](docs/EVALS.md).
 
 
 ## The Problem We Are Solving
@@ -134,8 +134,8 @@ By placing interoperability, accountability, and human clinical authority at the
 | Read-only MCP tools (queue summary, pending reviews) | Implemented |
 | Mock FHIR synchronization for approved bookings | Implemented |
 | Agent booking proposal with human-approval guardrail | Implemented as scaffolding |
-| MCP appointment-slot retrieval and routing tools | Planned |
-| Agent commit tool with one-time approval token | Planned |
+| MCP appointment-slot retrieval and routing tools | Implemented locally |
+| Approval-token commit workflow | Implemented in backend; human-only |
 | Local/in-country model deployment | Planned |
 | Live HMIS/FHIR integration | Not implemented — mock adapter only |
 
@@ -151,7 +151,7 @@ graph TD
 
     ROOT --> BACKEND["backend/ (FastAPI)"]
     ROOT --> SRC["src/ (React + Vite)"]
-    ROOT --> MIG["migrations/ (Alembic)"]
+    ROOT --> MIG["backend/migrations/ (Alembic)"]
     ROOT --> SCR["scripts/ (seed + verification)"]
     ROOT --> DOCS["docs/ (design & governance)"]
     ROOT --> ENV[".env"]
@@ -179,7 +179,7 @@ graph TD
 |------|---------|
 | `backend/` | FastAPI application: API routes, domain models, queue/flow services, agent workflow, read-only MCP tools |
 | `src/` | React + TypeScript + Vite frontend with role-specific dashboards |
-| `migrations/` | Alembic schema migrations |
+| `backend/migrations/` | Alembic schema migrations |
 | `scripts/` | Seeding (`seed_data.py`, `seed_flow.py`), Synthea import, phase checks |
 | `docs/` | Architecture, privacy, evaluation, deployment, and frontend documentation |
 | `backend/pyproject.toml` | Backend package and dependencies (managed with `uv`) |
@@ -246,7 +246,7 @@ This creates or updates `backend/.venv` from `backend/pyproject.toml` and `backe
 ### 4. Initialize the database
 
 ```bash
-uv run --project backend alembic -c backend/alembic.ini upgrade head
+uv run --project backend alembic -c alembic.ini upgrade head
 ```
 
 Seed synthetic demo data (optional, but useful for the dashboards):
@@ -318,7 +318,7 @@ flowchart TD
         ADAPTER["Mock FHIR adapter<br/>idempotent sync"]
     end
 
-    subgraph Database ["PostgreSQL (Neon or local)"]
+    subgraph Database ["Neon PostgreSQL"]
         PG[("Mzima database")]
     end
 
@@ -537,7 +537,7 @@ Set the connection strings in `.env`:
 - `DATABASE_URL` → pooled connection for application traffic.
 - `DATABASE_URL_UNPOOLED` → direct connection for tooling and migrations when the pooler does not support DDL.
 
-Alembic reads `DATABASE_URL` through `backend/core/config.py`. Point it at the direct URL when running migrations if your pooler rejects DDL or advisory locks, then switch it back for normal application traffic.
+Alembic reads `DATABASE_URL_UNPOOLED` through `backend/core/config.py` when it is set, while the API uses the pooled `DATABASE_URL`.
 
 Use a separate Neon branch per developer or per feature to keep schema changes isolated.
 
@@ -545,7 +545,7 @@ Use a separate Neon branch per developer or per feature to keep schema changes i
 
 ```bash
 # Create a branch from the Neon console or CLI, then point the environment at it
-uv run --project backend alembic -c backend/alembic.ini upgrade head
+uv run --project backend alembic -c alembic.ini upgrade head
 # Delete the branch when the work is merged
 ```
 
@@ -570,10 +570,10 @@ See [docs/DATA_AND_PRIVACY.md](docs/DATA_AND_PRIVACY.md) for the data policy and
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| MCP appointment-slot retrieval | Planned | Read-only tools for available slots |
-| MCP transport for `ReadOnlyMzimaMCP` | Planned | Currently an in-process Python tool layer; no MCP protocol server yet |
-| MCP routing proposal tool | Planned | Deterministic eligibility checks plus grounded rationale |
-| Clinician commit with one-time approval token | Planned | Idempotent, audited write path |
+| MCP appointment-slot retrieval | Implemented | Local stdio tool for available slots |
+| MCP transport for `ReadOnlyMzimaMCP` | Implemented | Local stdio FastMCP server; not a public network API |
+| MCP routing proposal tool | Implemented | Deterministic proposal with evidence |
+| Clinician commit with one-time approval token | Implemented | Authenticated, audited write path |
 | Agent proposal/commit hardening | In progress | Proposal + guardrail scaffolding exists in `backend/agent/` |
 | Unify agent proposal status with the clinician review queue | Planned | Review queue currently filters `PENDING_REVIEW`; agent proposals use `PROPOSED_BY_AGENT` |
 | Local/in-country model deployment | Planned | Data-sovereignty requirement for any pilot |
@@ -583,6 +583,8 @@ See [docs/DATA_AND_PRIVACY.md](docs/DATA_AND_PRIVACY.md) for the data policy and
 ---
 
 ## Documentation
+
+| [docs/BACKEND_REFERENCE.md](docs/BACKEND_REFERENCE.md) | Backend architecture, Neon/Alembic guidance, AgentRouter, package responsibilities, workflows, and the complete endpoint reference |
 
 | Doc | Purpose |
 |-----|---------|

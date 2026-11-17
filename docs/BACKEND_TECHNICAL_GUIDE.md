@@ -22,40 +22,38 @@ Mzima Backend is a **FastAPI**-based REST API for capacity-aware queue managemen
 cd /home/taz/desktop/ai/mzima
 python -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+uv sync --project backend --extra dev
 ```
 
 ### 2. Configure Environment
 
 ```bash
 cp .env.example .env
-# Edit the root .env with your PostgreSQL credentials
+# Edit the root .env with your Neon credentials
 ```
 
 Required variables in `.env`:
 ```env
-DATABASE_URL=postgresql://mzima_user:your_secure_password@localhost:5432/mzima_db
+DATABASE_URL=postgresql://user:password@ep-xxx-pooler.eu-central-1.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL_UNPOOLED=postgresql://user:password@ep-xxx.eu-central-1.aws.neon.tech/neondb?sslmode=require
 SECRET_KEY=your_32+_char_random_string
 ```
 
 ### 3. Database Setup
 
 ```bash
-# Create database (run once)
-createdb -U postgres mzima_db
-
 # Run migrations
-alembic upgrade head
+uv run --project backend alembic -c alembic.ini upgrade head
 ```
 
 ### 4. Start Server
 
 ```bash
 # Development (auto-reload)
-uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+uv run --project backend uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 
 # Production
-uvicorn backend.main:app --host 0.0.0.0 --port 8000 --workers 4
+uv run --project backend uvicorn backend.main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
 ### 5. Verify
@@ -81,9 +79,9 @@ backend/
 ├── mcp/server.py               # FastMCP and operational tool registrations
 └── data/                       # Synthetic source datasets and reference PDFs
 
-migrations/                     # Alembic revisions at repository root
+backend/migrations/             # Alembic revisions
 alembic.ini                     # Authoritative migration configuration
-pyproject.toml                  # Authoritative package metadata and dependencies
+backend/pyproject.toml          # Authoritative package metadata and dependencies
 .env.example                    # Root environment template
 ```
 

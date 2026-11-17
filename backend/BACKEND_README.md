@@ -1,6 +1,6 @@
 # Mzima Backend
 
-FastAPI backend for walk-in queue management, flow operations, and clinician-reviewed synthetic appointment requests. The root `pyproject.toml`, `uv.lock`, and `alembic.ini` are authoritative. Configure SQLite for local synthetic development or PostgreSQL with `DATABASE_URL` for shared environments. Appointment proposals are deterministic; a local model is optional and cannot approve or book.
+FastAPI backend for walk-in queue management, flow operations, and clinician-reviewed synthetic appointment requests. `backend/pyproject.toml`, `backend/uv.lock`, and the root `alembic.ini` are authoritative. Neon PostgreSQL is required, with `DATABASE_URL` for application traffic and `DATABASE_URL_UNPOOLED` for migrations. Appointment proposals are deterministic; a local model is optional and cannot approve or book.
 
 ## Implemented behavior
 
@@ -38,16 +38,16 @@ Requirements: Python 3.11+ and Node.js 20+.
 
 Run these commands from the repository root:
 
-1. Install the root project and test dependencies with `uv sync --extra dev` or `python -m pip install -e ".[dev]"`.
-2. Copy `.env.example` to `.env` if you need local overrides. For local development set `DATABASE_URL=sqlite:///./mzima.db`; pytest uses in-memory SQLite. The database file is ignored by Git.
-3. Create/update the configured schema with `uv run alembic -c alembic.ini upgrade head`.
-4. Add synthetic queue/request records and create local staff accounts with `uv run python -m scripts.seed_data`. It prints randomly generated demo account passwords once; save them locally. The command refuses to seed a non-SQLite database.
-5. Start the API with `uv run uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000`.
-6. In another terminal run `npm --prefix frontend install`, then `npm --prefix frontend run dev`. Open `http://localhost:5173`; Vite proxies API requests to the backend.
+1. Install the backend project and test dependencies with `uv sync --project backend --extra dev` or `python -m pip install -e "backend[dev]"`.
+2. Copy `.env.example` to `.env` and configure the Neon pooled and direct connection strings.
+3. Create/update the configured schema with `uv run --project backend alembic -c alembic.ini upgrade head`. With Neon, this uses `DATABASE_URL_UNPOOLED` when it is set.
+4. Add synthetic queue/request records and create local staff accounts with `uv run --project backend python -m scripts.seed_data`. It prints randomly generated demo account passwords once; save them locally.
+5. Start the API with `uv run --project backend uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000`.
+6. In another terminal, from the repository root, run `npm install`, then `npm run dev`. Open `http://localhost:5173`; Vite proxies API requests to the backend.
 
 The patient form accepts synthetic patient identifiers only. Staff pages use generated accounts and role checks enforced by the API. Seeded appointments are synthetic. This local setup is for development and demonstrations, not live care.
 
-To configure PostgreSQL instead, provide a secured PostgreSQL `DATABASE_URL` in a private `.env`, then run the same migration and API commands. Never use demo accounts or development signing keys for a deployment. Interactive API documentation is available at `/docs`. The configured roles are `clerk`, `nurse`, `shift_lead`, and `admin`.
+To configure Neon, provide secured pooled `DATABASE_URL` and direct `DATABASE_URL_UNPOOLED` values in a private `.env`, then run the same migration and API commands. Never use demo accounts or development signing keys for a deployment. Interactive API documentation is available at `/docs`. The configured roles are `clerk`, `nurse`, `shift_lead`, and `admin`.
 
 ## AgentRouter and local MCP agent
 
@@ -57,11 +57,11 @@ The appointment local agent is disabled by default. To enable it, configure `LOC
 
 ## Testing
 
-Run the isolated tests from the repository root with `uv run pytest -v`. Pytest fixtures use in-memory SQLite. The phase helper scripts are also isolated:
+Run the isolated tests from the repository root with `TEST_DATABASE_URL=<isolated-postgres-url> uv run --project backend pytest -v`. The phase helper scripts use the same isolated PostgreSQL setting:
 
 ```bash
-uv run python -m scripts.test_phase5
-uv run python -m scripts.test_phase6
+TEST_DATABASE_URL=<isolated-postgres-url> uv run --project backend python -m scripts.test_phase5
+TEST_DATABASE_URL=<isolated-postgres-url> uv run --project backend python -m scripts.test_phase6
 ```
 
 This is a development prototype, not a clinical decision system. Use synthetic data only; clinical workflow changes require authorized staff decisions. LangGraph orchestration, real clinic scheduling integration, and clinical/model evaluations are not implemented.
