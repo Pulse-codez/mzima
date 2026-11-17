@@ -1,201 +1,67 @@
-# Mzima Backend - Setup & Run Guide
+# Mzima Backend
 
-This FastAPI application is in the `backend/` Python package. Run the commands in this guide from the repository root. If your terminal is in `backend/`, first return to the repository root with `cd ..`; this ensures the app reads the repository-root `.env`. Dependencies are managed by `backend/pyproject.toml` and `backend/uv.lock`, with the virtual environment at `backend/.venv`. The backend supports PostgreSQL, including Neon, and optional Synthea-derived synthetic data.
+FastAPI backend for walk-in queue management, flow operations, and clinician-reviewed synthetic appointment requests. The root `pyproject.toml`, `uv.lock`, and `alembic.ini` are authoritative. Configure SQLite for local synthetic development or PostgreSQL with `DATABASE_URL` for shared environments. Appointment proposals are deterministic; a local model is optional and cannot approve or book.
 
-## Current scope
+## Implemented behavior
 
-The backend now includes:
+- Walk-in check-in records age band, visit type, and red flags. Any true red-flag value marks the visit as fast-track.
+- The queue ranks fast-track visits first, then visits waiting at least 120 minutes, then the highest age-weighted wait score. The score is `minutes_waited * age_weight`; `under_5` and `over_65` use a weight of `1.5`, and other age bands use `1.0`.
+- Staff can call a queued visit and complete its triage. Call overrides and workflow actions are written to audit records.
+- Appointment requests select the earliest future slot matching the requested service and store tool evidence. The proposal does not infer a diagnosis or clinical priority.
+- Shift leads and admins can reject or approve a proposal. Approval atomically reserves one unit of slot capacity; no-match and stale-capacity proposals cannot be approved as bookings. Decisions and tool evidence are audited.
+- FastMCP exposes read-only queue/workload/bottleneck/recommendation data and appointment slot/proposal tools over stdio. The optional loopback-only local model is allowlisted to slot lookup and proposal tools; clinician approval remains a separate authenticated API action.
+- Role checks protect selected staff actions; not every read or submission endpoint currently requires authentication.
 
-- Walk-in queue indexing and clinical/staff review workflows
-- Deterministic flow metrics, bottleneck detection, recommendations, and simulation
-- Synthetic patient observations and IITT-derived warning-sign alerts
-- Optional AgentRouter-based free-text extraction
-- Imported Synthea synthetic encounter and observation data
+## API endpoints
 
-It remains a **synthetic-data prototype only**. It is not approved for live patient care.
+All versioned endpoints use the `/api/v1` prefix.
 
----
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `POST` | `/auth/login` | Obtain a bearer token |
+| `GET` | `/auth/me` | Read the authenticated user |
+| `POST` | `/visits` | Check in a walk-in visit |
+| `GET` | `/queue` | List visits in queue order |
+| `POST` | `/queue/{visit_id}/call` | Call a visit, optionally recording an override reason |
+| `POST` | `/visits/{visit_id}/triage` | Record triage category and destination |
+| `POST` | `/appointments/appointment-requests` | Submit an appointment request |
+| `GET` | `/appointments/slots?specialty=General%20outpatient` | List future slots with remaining capacity |
+| `GET` | `/appointments/clinic/review-queue` | List pending requests |
+| `POST` | `/appointments/appointment-requests/{request_id}/decision` | Reject or approve and book the proposed slot |
+| `GET` | `/appointments/appointments/{request_id}` | Read appointment request details |
 
-## Prerequisites
+Health checks are available at `GET /health` and `GET /ready`; the latter checks database connectivity.
 
-- Python **3.11+**
-- **uv** (recommended) for dependency and environment management
-- A reachable PostgreSQL database for database-backed endpoints
-- Environment file at the repository root (`.env`)
+## Local synthetic setup
 
-From the repository root, check tools:
+Requirements: Python 3.11+ and Node.js 20+.
 
-```bash
-uv --version
-python --version
-```
+Run these commands from the repository root:
 
----
+1. Install the root project and test dependencies with `uv sync --extra dev` or `python -m pip install -e ".[dev]"`.
+2. Copy `.env.example` to `.env` if you need local overrides. For local development set `DATABASE_URL=sqlite:///./mzima.db`; pytest uses in-memory SQLite. The database file is ignored by Git.
+3. Create/update the configured schema with `uv run alembic -c alembic.ini upgrade head`.
+4. Add synthetic queue/request records and create local staff accounts with `uv run python -m scripts.seed_data`. It prints randomly generated demo account passwords once; save them locally. The command refuses to seed a non-SQLite database.
+5. Start the API with `uv run uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000`.
+6. In another terminal run `npm --prefix frontend install`, then `npm --prefix frontend run dev`. Open `http://localhost:5173`; Vite proxies API requests to the backend.
 
-## 1. Install dependencies (repository root)
+The patient form accepts synthetic patient identifiers only. Staff pages use generated accounts and role checks enforced by the API. Seeded appointments are synthetic. This local setup is for development and demonstrations, not live care.
 
-From the repository root:
+To configure PostgreSQL instead, provide a secured PostgreSQL `DATABASE_URL` in a private `.env`, then run the same migration and API commands. Never use demo accounts or development signing keys for a deployment. Interactive API documentation is available at `/docs`. The configured roles are `clerk`, `nurse`, `shift_lead`, and `admin`.
 
-```bash
-uv sync --project backend
-```
+## AgentRouter and local MCP agent
 
-This creates or updates `backend/.venv` using `backend/pyproject.toml` and `backend/uv.lock`.
+The AgentRouter extraction endpoint converts supplied text into observation fields and returns `requires_human_review: true`; it does not diagnose or assign priority. A previous environment attempt received 401 from AgentRouter, so provider access should be verified before relying on extraction.
 
-## 2. Configure environment
+The appointment local agent is disabled by default. To enable it, configure `LOCAL_AGENT_ENABLED`, a loopback `LOCAL_MODEL_BASE_URL`, `LOCAL_MODEL_NAME`, and `LOCAL_MODEL_API_KEY`. Its tool allowlist contains only slot lookup and proposal creation. Booking or rejection is not exposed to the model and requires a separate authenticated shift-lead/admin decision. The stdio MCP server registers read-only queue/workload and recorded operational alerts/recommendations alongside the bounded appointment tools. Operational MCP tools require an authenticated embedding host to create the server with an active shift-lead/admin `actor_id`; the standalone `uv run python -m backend.mcp.server` process has no such identity and fails closed for those tools. Stdio is local-process access, not an authenticated network endpoint. The supported HTTP operational-query entry point is `POST /api/v1/flow/operational-query`.
 
-Create the repository-root `.env` from the example if it does not already exist:
+## Testing
 
-```bash
-cp .env.example .env
-```
-
-Set `DATABASE_URL` to a reachable PostgreSQL database and configure a private `SECRET_KEY`. `AGENTROUTER_API_KEY` is optional and only needed for the extraction integration. Never commit real credentials. Database-backed endpoints require a working database.
-
-## 3. Run database migrations (as needed)
-
-From the repository root:
-
-```bash
-uv run --project backend alembic -c backend/alembic.ini upgrade head
-```
-
-## 4. Start the backend
-
-From the repository root:
+Run the isolated tests from the repository root with `uv run pytest -v`. Pytest fixtures use in-memory SQLite. The phase helper scripts are also isolated:
 
 ```bash
-uv run --project backend uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
+uv run python -m scripts.test_phase5
+uv run python -m scripts.test_phase6
 ```
 
-Use Ctrl+C to stop the development server. `backend.main:app` is the application import path.
-
-Endpoints:
-
-- Swagger API docs: http://127.0.0.1:8000/docs
-- Health: http://127.0.0.1:8000/health
-- Readiness (checks the database): http://127.0.0.1:8000/ready
-- OpenAPI JSON: http://127.0.0.1:8000/api/v1/openapi.json
-
-## 5. Seed data (optional)
-
-Run these scripts from the repository root after configuring the database:
-
-```bash
-uv run --project backend python scripts/seed_data.py
-uv run --project backend python scripts/seed_flow.py
-uv run --project backend python scripts/import_synthea.py
-```
-
-## Key API groups
-
-| POST | `/api/v1/visits` | Walk-in check-in |
-| GET | `/api/v1/queue` | Walk-in queue |
-| POST | `/api/v1/queue/{visit_id}/call` | Call next patient |
-| POST | `/api/v1/visits/{visit_id}/triage` | Complete triage |
-| GET | `/api/v1/flow/summary` | Flow metrics |
-| GET | `/api/v1/flow/clinical-alerts` | Evidence-backed warning-sign alerts |
-| POST | `/api/v1/flow/bottleneck-scan` | Detect bottlenecks |
-| POST | `/api/v1/flow/recommendations/scan` | Generate operational recommendations |
-| POST | `/api/v1/flow/simulations` | Stakeholder-free operational simulation |
-| POST | `/api/v1/flow/observations` | Create synthetic/prototype observation set |
-| POST | `/api/v1/flow/observations/extract` | Optional AgentRouter extraction |
-
----
-
-## Agent Router / AI extraction
-
-The extraction endpoint converts free text into structured fields and returns `requires_human_review: true`. It does not diagnose or assign priority.
-
-Test:
-
-```bash
-curl -X POST http://localhost:8000/api/v1/flow/observations/extract \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"text":"Patient has fever 39.2, fast breathing, severe headache, confused."}'
-```
-
-Important status: extraction reached AgentRouter, but the configured key was rejected with **401 Unauthorized / unauthorized client detected** during this environment test. This is a remote access/authorization issue, not a local import issue. Verify the AgentRouter key, account permissions, and outbound network access before relying on extraction.
-
----
-
-## Testing helpers
-
-```bash
-uv run --project backend python scripts/test_phase5.py
-uv run --project backend python scripts/test_phase6.py
-```
-
-No comprehensive automated test suite has been added yet for the new flow endpoints.
-
----
-
-## Development notes
-
-### `ModuleNotFoundError: No module named 'backend'`
-
-Run commands from the repository root and sync the backend project:
-
-```bash
-uv sync --project backend
-```
-
-### Migrations
-
-```bash
-uv run --project backend alembic -c backend/alembic.ini revision --autogenerate -m "description"
-uv run --project backend alembic -c backend/alembic.ini upgrade head
-```
-
-### Stack and style
-
-- Backend package root: `backend/`
-- Migrations run from project root
-- Database schema is additive where possible
-- Flow endpoints are deterministic except optional extraction
-
----
-
-## Troubleshooting
-
-### `uvicorn: command not found`
-
-Use:
-
-```bash
-uv run --project backend uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
-```
-
-Run the command above from the repository root. If your terminal is in `backend/`, run `cd ..` first.
-
-### `alembic: command not found`
-
-Use:
-
-```bash
-uv run --project backend alembic -c backend/alembic.ini upgrade head
-```
-
-### `GET /v1/models` used to return 404
-
-The backend now returns a compatibility response for `/v1/models`.
-
-### AgentRouter extraction returns 401
-
-Verify:
-
-- `AGENTROUTER_API_KEY` is valid
-- `BASE_URL` points to the AgentRouter endpoint
-- The deployment environment can reach `agentrouter.org`
-- Account-level access is enabled for the key
-
-### `GET /health` returns 200 but `GET /ready` fails
-
-Check `DATABASE_URL`, Neon branch status, and network connectivity.
-
----
-
-## Safety boundary
-
-This backend is for synthetic-data development only unless a pilot facility, clinical owners, data controller, privacy review, retention policy, and approved hosting environment are in place. It must not be described as live-care ready. Every clinical decision belongs to qualified healthcare staff.
+This is a development prototype, not a clinical decision system. Use synthetic data only; clinical workflow changes require authorized staff decisions. LangGraph orchestration, real clinic scheduling integration, and clinical/model evaluations are not implemented.

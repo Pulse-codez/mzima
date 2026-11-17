@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import urlparse
+
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -33,6 +35,12 @@ class Settings(BaseSettings):
     AGENTROUTER_MODEL: str = "gpt-4o-mini"
     AGENTROUTER_TIMEOUT_SECONDS: int = 30
 
+    LOCAL_AGENT_ENABLED: bool = False
+    LOCAL_MODEL_BASE_URL: str = "http://127.0.0.1:11434/v1"
+    LOCAL_MODEL_NAME: str = ""
+    LOCAL_MODEL_API_KEY: str = "local"
+    LOCAL_MODEL_TIMEOUT_SECONDS: float = 20.0
+
     APP_ENV: str | None = None
 
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=True, extra="ignore")
@@ -53,6 +61,18 @@ class Settings(BaseSettings):
             self.AGENTROUTER_MODEL = self.MODEL_NAME
         if self.APP_ENV:
             self.ENV = self.APP_ENV
+        return self
+
+    @model_validator(mode="after")
+    def validate_local_model_url(self):
+        parsed = urlparse(self.LOCAL_MODEL_BASE_URL)
+        if parsed.scheme not in {"http", "https"} or parsed.hostname not in {
+            "localhost",
+            "127.0.0.1",
+            "::1",
+        }:
+            raise ValueError("LOCAL_MODEL_BASE_URL must use a loopback host")
+        self.LOCAL_MODEL_BASE_URL = self.LOCAL_MODEL_BASE_URL.rstrip("/")
         return self
 
 

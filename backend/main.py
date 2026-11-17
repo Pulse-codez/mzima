@@ -2,9 +2,9 @@ from fastapi import Depends, FastAPI, HTTPException, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from backend.api.deps import get_db
 from backend.api.v1.router import api_router
 from backend.core.config import settings
-from backend.db.session import get_db
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -23,11 +23,16 @@ def health_check():
 def readiness_check(db: Session = Depends(get_db)):
     try:
         db.execute(text("SELECT 1"))
-        return {"status": "ready", "database": "connected"}
-    except Exception as e:
+        dialect = db.bind.dialect.name if db.bind is not None else "unknown"
+        return {
+            "status": "ready",
+            "database": "connected",
+            "dialect": dialect,
+        }
+    except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=f"Database connectivity check failed: {str(e)}",
+            detail=f"Database connectivity check failed: {exc.__class__.__name__}",
         )
 
 

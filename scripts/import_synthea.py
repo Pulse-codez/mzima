@@ -6,21 +6,18 @@ from __future__ import annotations
 import csv
 import os
 import random
-import sys
 from datetime import datetime, timedelta
 from types import SimpleNamespace
 from uuid import uuid4
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
 
-from app.db.session import SessionLocal
-from app.models.domain import Visit, VisitStatusEnum
-from app.models.flow import PatientObservationSet, ClinicalReviewAlert
-from app.services.flow.clinical_alerts import evaluate_iitt_warning_signs
+from backend.db.session import SessionLocal
+from backend.models.domain import Visit, VisitStatusEnum
+from backend.models.flow import PatientObservationSet, ClinicalReviewAlert
+from backend.services.flow.clinical_alerts import evaluate_iitt_warning_signs
 
-DATA_DIR = os.path.join(PROJECT_ROOT, "app", "data", "csv")
+DATA_DIR = os.path.join(PROJECT_ROOT, "backend", "data", "csv")
 ORG_ID = "e002090d-4e92-300e-b41e-7d1f21dee4c6"
 MAX_ENCOUNTERS = 1000
 TARGET_CLASSES = {"ambulatory", "outpatient", "urgentcare", "emergency"}

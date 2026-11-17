@@ -1,36 +1,33 @@
+import json
+import uuid
 import asyncio
 from datetime import datetime, timedelta
 
 import pytest
-from mcp.shared.memory import create_connected_server_and_client_session
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
-from app.core.config import settings
-from app.core.security import get_password_hash
-from app.db.session import Base
-from app.mcp.server import create_mcp_server
-from app.models.domain import AppointmentRequest, AppointmentSlot, RoleEnum, User
-from app.services.appointments import local_agent
-from app.services.appointments.local_agent import _mcp_result_value
-from app.services.appointments.workflow import issue_approval_token
+from backend.mcp import server as mcp_server
+from backend.models.domain import AppointmentRequest, AppointmentSlot, RoleEnum, User, Visit
+from backend.services.appointments.tools import get_appointment_slots, score_and_propose_route
+from backend.services.appointments.workflow import (
+    ApprovalError,
+    issue_approval_token,
+    review_and_commit,
+)
 
 
 @pytest.fixture
-def mcp_database():
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    testing_session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    Base.metadata.create_all(bind=engine)
-    with testing_session() as db:
+def mcp_database(test_session_factory):
+    with test_session_factory() as db:
         clinician = User(
             username="mcp-clinician",
-            hashed_password=get_password_hash("mcp-test-password"),
+            hashed_password="not-used-in-this-fixture",
             role=RoleEnum.SHIFT_LEAD,
+            is_active=True,
+        )
+        nurse = User(
+            username="mcp-nurse",
+            hashed_password="not-used-in-this-fixture",
+            role=RoleEnum.NURSE,
             is_active=True,
         )
         slot = AppointmentSlot(
@@ -39,7 +36,14 @@ def mcp_database():
             capacity=1,
             booked_count=0,
         )
-        db.add_all([clinician, slot])
+        visit = Visit(
+            token_number="T-TEST-001",
+            age_band="adult",
+            visit_type="new",
+            is_fast_track=False,
+            red_flags={},
+        )
+        db.add_all([clinician, nurse, slot, visit])
         db.flush()
         request = AppointmentRequest(
             patient_identifier="SYNTHETIC-AGENT-01",
@@ -52,131 +56,114 @@ def mcp_database():
         db.commit()
         request_id = str(request.id)
         clinician_id = clinician.id
+        nurse_id = nurse.id
+        slot_id = slot.id
+    return test_session_factory, request_id, clinician_id, nurse_id, slot_id
 
-    yield testing_session, request_id, clinician_id
-    Base.metadata.drop_all(bind=engine)
-    engine.dispose()
+
+def test_backend_read_only_mcp_queries_service_data(mcp_database, monkeypatch) -> None:
+    testing_session, request_id, _, _, _ = mcp_database
+    monkeypatch.setattr(mcp_server, "SessionLocal", testing_session)
+
+    summary = json.loads(mcp_server.ReadOnlyMzimaMCP.get_live_queue_summary())
+    reviews = json.loads(mcp_server.ReadOnlyMzimaMCP.get_pending_appointment_reviews())
+
+    assert summary["total_in_queue"] == 1
+    assert summary["top_tokens"][0]["token_number"] == "T-TEST-001"
+    assert [item["id"] for item in reviews] == [request_id]
 
 
-def test_mcp_tools_commit_only_with_valid_approval_and_reject_replay(mcp_database) -> None:
-    testing_session, request_id, clinician_id = mcp_database
-    approval_token = issue_approval_token(
-        request_id=__import__("uuid").UUID(request_id),
-        clinician_id=clinician_id,
-        decision="APPROVE",
-        reason="Synthetic MCP integration test",
+def test_backend_operational_mcp_adapters_use_existing_data(mcp_database) -> None:
+    testing_session, _, _, _, _ = mcp_database
+    workload = json.loads(
+        mcp_server.ReadOnlyMzimaMCP.get_clinic_workload_summary(
+            session_factory=testing_session
+        )
+    )
+    alerts = json.loads(
+        mcp_server.ReadOnlyMzimaMCP.get_bottleneck_alerts(
+            session_factory=testing_session
+        )
+    )
+    recommendations = json.loads(
+        mcp_server.ReadOnlyMzimaMCP.get_supervisor_recommendations(
+            session_factory=testing_session
+        )
     )
 
-    async def exercise_mcp() -> None:
-        server = create_mcp_server(testing_session)
+    assert workload["queue_length"] == 1
+    assert workload["arrivals_last_hour"] == 1
+    assert alerts == []
+    assert recommendations == []
+
+
+def test_fastmcp_registers_operational_and_appointment_tools(test_session_factory) -> None:
+    pytest.importorskip("mcp")
+    from mcp.shared.memory import create_connected_server_and_client_session
+
+    async def list_names() -> set[str]:
+        server = mcp_server.create_mcp_server(test_session_factory)
         async with create_connected_server_and_client_session(server) as session:
             await session.initialize()
-            tools = await session.list_tools()
-            assert {tool.name for tool in tools.tools} == {
-                "get_appointment_slots_tool",
-                "score_and_propose_route_tool",
-                "review_and_commit_tool",
-            }
-            available = await session.call_tool(
-                "get_appointment_slots_tool", {"specialty": "General outpatient"}
-            )
-            assert _mcp_result_value(available)["slots"]
+            result = await session.list_tools()
+            return {tool.name for tool in result.tools}
 
-            committed = await session.call_tool(
-                "review_and_commit_tool", {"approval_token": approval_token}
-            )
-            assert _mcp_result_value(committed)["status"] == "BOOKED"
+    assert asyncio.run(list_names()) == {
+        "get_live_queue_summary_tool",
+        "get_pending_appointment_reviews_tool",
+        "get_clinic_workload_summary_tool",
+        "get_clinic_workload_summaries_tool",
+        "get_bottleneck_alerts_tool",
+        "get_supervisor_recommendations_tool",
+        "get_appointment_slots_tool",
+        "get_available_appointment_slots_tool",
+        "score_and_propose_route_tool",
+        "review_and_commit_tool",
+    }
 
-            replayed = await session.call_tool(
-                "review_and_commit_tool", {"approval_token": approval_token}
-            )
-            assert _mcp_result_value(replayed)["status"] == "ERROR"
 
-    asyncio.run(exercise_mcp())
+def test_backend_appointment_tools_propose_and_commit_with_clinician_token(mcp_database) -> None:
+    testing_session, request_id, clinician_id, _, slot_id = mcp_database
     with testing_session() as db:
-        saved_request = db.get(AppointmentRequest, __import__("uuid").UUID(request_id))
+        slots = get_appointment_slots(db, "General outpatient")
+        assert [slot.id for slot in slots] == [slot_id]
+        proposal = score_and_propose_route(db, "General outpatient")
+        assert proposal["status"] == "PENDING_CLINICIAN_REVIEW"
+        assert proposal["slot_id"] == str(slot_id)
+
+    approval_token = issue_approval_token(
+        request_id=uuid.UUID(request_id),
+        clinician_id=clinician_id,
+        decision="APPROVE",
+        reason="Synthetic backend workflow test",
+    )
+    with testing_session() as db:
+        result = review_and_commit(db, approval_token)
+        assert result["status"] == "BOOKED"
+    with testing_session() as db:
+        saved_request = db.get(AppointmentRequest, uuid.UUID(request_id))
         assert saved_request.status == "BOOKED"
         slot = db.get(AppointmentSlot, saved_request.booked_slot_id)
         assert slot.booked_count == 1
+        assert len(saved_request.decisions) == 1
 
 
-def test_local_agent_limits_model_to_read_and_proposal_tools(mcp_database, monkeypatch) -> None:
-    testing_session, request_id, _ = mcp_database
-    monkeypatch.setattr(settings, "LOCAL_MODEL_NAME", "synthetic-test-model")
-    responses = [
-        {
-            "choices": [
-                {
-                    "message": {
-                        "tool_calls": [
-                            {
-                                "id": "call-slots",
-                                "function": {
-                                    "name": "get_appointment_slots_tool",
-                                    "arguments": '{"specialty":"untrusted value"}',
-                                },
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-        {
-            "choices": [
-                {
-                    "message": {
-                        "tool_calls": [
-                            {
-                                "id": "call-proposal",
-                                "function": {
-                                    "name": "score_and_propose_route_tool",
-                                    "arguments": '{"request_id":"untrusted value"}',
-                                },
-                            }
-                        ]
-                    }
-                }
-            ]
-        },
-    ]
-    observed_requests = []
-
-    class FakeResponse:
-        def __init__(self, payload):
-            self.payload = payload
-
-        def raise_for_status(self):
-            return None
-
-        def json(self):
-            return self.payload
-
-    class FakeAsyncClient:
-        def __init__(self, **kwargs):
-            self.kwargs = kwargs
-
-        async def __aenter__(self):
-            return self
-
-        async def __aexit__(self, *_args):
-            return None
-
-        async def post(self, path, json):
-            observed_requests.append(json)
-            return FakeResponse(responses.pop(0))
-
-    monkeypatch.setattr(local_agent.httpx, "AsyncClient", FakeAsyncClient)
-    proposal = local_agent.run_local_agent_sync(
-        request_id,
-        "General outpatient",
-        testing_session,
+def test_approval_token_rejects_unauthorized_role_and_replay(mcp_database) -> None:
+    testing_session, request_id, clinician_id, nurse_id, _ = mcp_database
+    unauthorized = issue_approval_token(
+        uuid.UUID(request_id), nurse_id, "APPROVE", "Not a supervisor"
     )
+    with testing_session() as db, pytest.raises(ApprovalError, match="active clinician"):
+        review_and_commit(db, unauthorized)
 
-    assert proposal["status"] == "PENDING_CLINICIAN_REVIEW"
-    assert len(observed_requests) == 2
-    assert {tool["function"]["name"] for tool in observed_requests[0]["tools"]} == {
-        "get_appointment_slots_tool",
-        "score_and_propose_route_tool",
-    }
-    assert "review_and_commit_tool" not in str(observed_requests[0]["tools"])
-    assert "SYNTHETIC-AGENT-01" not in str(observed_requests)
+    expired_or_invalid = "not-a-signed-token"
+    with testing_session() as db, pytest.raises(ApprovalError, match="Invalid or expired"):
+        review_and_commit(db, expired_or_invalid)
+
+    approval_token = issue_approval_token(
+        uuid.UUID(request_id), clinician_id, "APPROVE", "Synthetic clinician approval"
+    )
+    with testing_session() as db:
+        assert review_and_commit(db, approval_token)["status"] == "BOOKED"
+    with testing_session() as db, pytest.raises(ApprovalError, match="already been decided"):
+        review_and_commit(db, approval_token)

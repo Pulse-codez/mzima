@@ -44,16 +44,16 @@ def upgrade() -> None:
             ["proposed_slot_id"],
             ["id"],
         )
-    with op.batch_alter_table("clinician_decisions") as batch_op:
-        batch_op.add_column(sa.Column("approval_jti", sa.String(length=36), nullable=True))
-        batch_op.create_unique_constraint("uq_clinician_decision_approval_jti", ["approval_jti"])
-        batch_op.create_unique_constraint("uq_clinician_decision_request", ["request_id"])
         batch_op.create_foreign_key(
             "fk_appointment_requests_booked_slot_id",
             "appointment_slots",
             ["booked_slot_id"],
             ["id"],
         )
+    with op.batch_alter_table("clinician_decisions") as batch_op:
+        batch_op.add_column(sa.Column("approval_jti", sa.String(length=36), nullable=True))
+        batch_op.create_unique_constraint("uq_clinician_decision_approval_jti", ["approval_jti"])
+        batch_op.create_unique_constraint("uq_clinician_decision_request", ["request_id"])
 
 
 def downgrade() -> None:

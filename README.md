@@ -19,11 +19,7 @@
 >
 > No AI model independently diagnoses patients, determines clinical urgency, or overrides professional clinical judgement. A named, authenticated clinician must approve any priority, referral, booking, or queue-affecting change.
 
-<<<<<<< HEAD
-The repository includes a synthetic appointment workflow: a deterministic slot tool proposes the earliest matching available slot, and only an authenticated clinician approval reserves it. No-match and stale-capacity cases fail closed. This is not a model-driven agent and `app/mcp/appointment_tools.py` is an internal tool module, not a standards-compliant MCP server. Model orchestration, MCP transport/authentication, facility routing guidance, and model-based evaluation remain unimplemented.
-=======
----
->>>>>>> upstream/main
+The repository includes a synthetic appointment workflow: a deterministic slot tool proposes the earliest matching available slot, and only an authenticated clinician approval reserves it. No-match and stale-capacity cases fail closed. A local stdio FastMCP server exposes read-only operational summaries and bounded appointment tools; an optional loopback-only model may make proposals but cannot approve or book. See [EVALS.md](docs/EVALS.md) for evaluation status.
 
 ## What is Mzima?
 
@@ -31,15 +27,10 @@ Mzima is a proposed healthcare workflow and interoperability platform designed f
 
 At its core, Mzima connects **outpatient queue management**, **appointment coordination**, and **clinic scheduling** workflows while maintaining clear boundaries between automated operations and human clinical authority. Rather than replacing healthcare professionals, Mzima aims to reduce administrative friction, improve access to operational information, and provide accountable workflows that support healthcare workers.
 
-<<<<<<< HEAD
-Follow [app/README.md](app/README.md) for the local synthetic setup, including migrations, randomly generated staff demo accounts, sample slots, the API, and the React frontend in [frontend/](frontend/). The frontend proxies API requests to `http://127.0.0.1:8000` by default; see [frontend/README.md](frontend/README.md) for current limitations.
+Follow [backend/BACKEND_README.md](backend/BACKEND_README.md) for Python setup, database migrations, the API, and synthetic test helpers. The frontend is in [frontend/](frontend/) and its setup is documented in [FRONTEND_README.md](FRONTEND_README.md); Vite proxies API requests to `http://127.0.0.1:8000` by default.
 
-This remains a prototype: use synthetic data only. It is not ready for live care or deployment. Run `python -m pytest -q` for deterministic workflow evaluations and `npm --prefix frontend run build` for the frontend production check. Model/MCP behavioral cases remain not run; see [EVALS.md](EVALS.md).
-=======
-This repository is the working **synthetic-data prototype** of that proposal: a FastAPI backend, a React frontend, a read-only MCP tool layer, and an explicit clinician approval gate.
+This repository is a **synthetic-data prototype** with a FastAPI backend, React frontend, a local stdio MCP server, and an explicit clinician approval gate. Operational MCP tools are read-only; appointment tools can look up slots and create proposals, while only an authorized clinician can approve or reject. Use synthetic data only; it is not ready for live care or deployment. Run `uv run pytest -v` for workflow tests and `npm --prefix frontend run build` for the frontend production check. Model behavior still requires separate evaluation; see [docs/EVALS.md](docs/EVALS.md).
 
----
->>>>>>> upstream/main
 
 ## The Problem We Are Solving
 

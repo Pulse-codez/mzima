@@ -17,10 +17,15 @@ __pycache__/
 venv/
 
 # Frontend dependencies and generated builds
-<<<<<<< HEAD
+node_modules/
 frontend/node_modules/
+dist/
 frontend/dist/
+build/
 frontend/*.tsbuildinfo
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
 frontend/vite.config.js
 frontend/vite.config.d.ts
 
@@ -28,12 +33,6 @@ frontend/vite.config.d.ts
 *.db
 *.sqlite
 *.sqlite3
-=======
-node_modules/
-dist/
-*.tsbuildinfo
-vite.config.js
-vite.config.d.ts
 
 # IDE
 .idea/
@@ -50,8 +49,3 @@ coverage/
 htmlcov/
 .pytest_cache/
 .neon
-=======
-.env
-*.env.local
->>>>>>> origin/feat/taz
->>>>>>> upstream/main

@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from backend.api.deps import RoleChecker, get_current_user, get_db
 from backend.core.config import settings
-from backend.models.domain import User, Visit
+from backend.models.domain import RoleEnum, User, Visit
 from backend.models.flow import (
     AssessmentStation,
     BottleneckAlert,
@@ -36,6 +36,7 @@ from backend.schemas.flow import (
     StationStatusUpdate,
     StaffingCreate,
     TextExtractionRequest,
+    OperationalQueryRequest,
 )
 from backend.services.flow.capacity import (
     detect_bottlenecks,
@@ -50,12 +51,49 @@ from backend.services.flow.capacity import (
 from backend.services.flow.clinical_alerts import create_clinical_alerts
 from backend.services.flow.llm_extraction import extract_observation_fields
 from backend.services.flow.simulation import simulate_capacity_scenario
+from backend.services.audit.service import log_audit_event
+from backend.agent.operational_router import run_operational_query
 
 router = APIRouter(prefix="/flow", tags=["flow optimisation"])
 
 
 def _role(*roles):
     return Depends(RoleChecker(list(roles)))
+
+
+@router.post(
+    "/operational-query",
+    dependencies=[Depends(RoleChecker([RoleEnum.SHIFT_LEAD, RoleEnum.ADMIN]))],
+)
+def query_operational_intelligence(
+    payload: OperationalQueryRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = run_operational_query(db, payload.query, current_user.id)
+    try:
+        log_audit_event(
+            db,
+            actor_id=current_user.id,
+            action="OPERATIONAL_QUERY",
+            entity_type="OperationalQuery",
+            entity_id=str(uuid.uuid4()),
+            payload={
+                "intent": result["intent"],
+                "classification_source": result["classification_source"],
+                "tools_invoked": result["tools_invoked"],
+                "outcome": result["status"],
+                "query_length": len(payload.query),
+                "error_type": result.get("error_type"),
+            },
+        )
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Operational query audit could not be persisted",
+        ) from exc
+    return result
 
 
 @router.get("/summary")

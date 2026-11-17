@@ -1,74 +1,51 @@
 # Mzima Backend Setup
 
-The FastAPI application is in the `backend/` Python package. Run the commands in this guide from the repository root. If your terminal is currently in `backend/`, return to the repository root first with `cd ..`. This also ensures the application reads the repository-root `.env` file.
+The authoritative Python package is `backend/`. Run commands from the repository root; the root `pyproject.toml`, `uv.lock`, and `alembic.ini` are the single package, dependency, and migration configurations.
 
 ## Prerequisites
 
 - Python 3.11 or newer
-- [uv](https://docs.astral.sh/uv/) installed
-- A PostgreSQL database, local or hosted
-
-Check the tools:
-
-```bash
-python --version
-uv --version
-```
+- [uv](https://docs.astral.sh/uv/)
+- PostgreSQL for shared/deployed environments; SQLite is supported for local synthetic development and isolated tests
 
 ## First-time setup
 
-From the repository root:
-
 ```bash
-uv sync --project backend
-```
-
-This creates/updates `backend/.venv` and installs the dependencies declared in `backend/pyproject.toml` and `backend/uv.lock`.
-
-Configure the root `.env` file, which is loaded when commands run from the repository root. Start from the example if needed:
-
-```bash
+uv sync --extra dev
 cp .env.example .env
 ```
 
-Set at least `DATABASE_URL` to a reachable PostgreSQL database and set a private `SECRET_KEY` for development. `AGENTROUTER_API_KEY` is only needed for the optional extraction integration. Do not commit real credentials. The example uses a local development database URL; the application also has a development fallback, but database-backed endpoints require a working database.
+Set a private `DATABASE_URL` and `SECRET_KEY`. For local synthetic use, set `DATABASE_URL=sqlite:///./mzima.db`. Pytest fixtures use an in-memory SQLite database and do not depend on `.env`. Never commit credentials.
 
-## Start the server
-
-From the repository root, use:
+## Migrations and server
 
 ```bash
-uv run --project backend uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
+uv run alembic -c alembic.ini upgrade head
+uv run uvicorn backend.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-`backend.main:app` is the actual FastAPI import path. Stop the development server with Ctrl+C.
+The API docs are at `http://127.0.0.1:8000/docs`; health and readiness endpoints are `/health` and `/ready`.
 
-Endpoints:
-
-- API docs: http://127.0.0.1:8000/docs
-- Health: http://127.0.0.1:8000/health
-- Readiness (checks the database): http://127.0.0.1:8000/ready
-- OpenAPI JSON: http://127.0.0.1:8000/api/v1/openapi.json
-
-## Database migrations
-
-From the repository root:
+## Tests and synthetic data
 
 ```bash
-uv run --project backend alembic -c backend/alembic.ini upgrade head
+uv run pytest -v
+uv run python -m scripts.test_phase5
+uv run python -m scripts.test_phase6
 ```
 
-## Tests
-
-Run the backend test suite from the repository root:
+The pytest suite uses isolated in-memory SQLite fixtures. Phase scripts use temporary in-memory SQLite databases. Seed or import synthetic application data only when intentionally targeting a configured development database:
 
 ```bash
-uv run --project backend pytest
+uv run python -m scripts.seed_data
+uv run python -m scripts.seed_flow
+uv run python -m scripts.import_synthea
 ```
 
-The phase helper scripts are at the repository root and can be run with:
+## Optional local appointment agent and MCP
 
-```bash
-uv run --project backend python scripts/test_phase5.py
-uv run --project backend python scripts/test_phase6.py
-```
+The local appointment agent is disabled by default. Configure `LOCAL_AGENT_ENABLED=true`, a loopback-only `LOCAL_MODEL_BASE_URL`, `LOCAL_MODEL_NAME`, and `LOCAL_MODEL_API_KEY` to enable it. The model may only call slot lookup and proposal tools. Clinician approval remains an authenticated API action. The FastMCP server is local stdio, not an authenticated network endpoint; operational tools fail closed unless an authenticated embedding host supplies an active `SHIFT_LEAD`/`ADMIN` actor ID. Use `POST /api/v1/flow/operational-query` for the authenticated operational query workflow.
+
+AgentRouter extraction is separately configured through `AGENTROUTER_API_KEY`, `BASE_URL`/`AGENTROUTER_BASE_URL`, and `MODEL_NAME`/`AGENTROUTER_MODEL`. Extraction returns a human-review-required payload and does not diagnose or set clinical priority.
+
+This is a synthetic-data prototype, not a live-care system. Clinical workflow changes require authorized staff decisions.

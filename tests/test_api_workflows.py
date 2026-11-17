@@ -1,69 +1,7 @@
-from collections.abc import Generator
-from datetime import datetime, timedelta
-
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
-from app.api.deps import get_db
-from app.core.security import get_password_hash
-from app.db.session import Base
-from app.main import app
-from app.models.domain import AppointmentSlot, RoleEnum, User
-
-
-@pytest.fixture
-def client() -> Generator[TestClient, None, None]:
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-    testing_session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    Base.metadata.create_all(bind=engine)
-
-    with testing_session() as db:
-        db.add_all(
-            [
-                User(
-                    username="test-clerk",
-                    hashed_password=get_password_hash("test-clerk-password"),
-                    role=RoleEnum.CLERK,
-                ),
-                User(
-                    username="test-nurse",
-                    hashed_password=get_password_hash("test-nurse-password"),
-                    role=RoleEnum.NURSE,
-                ),
-                User(
-                    username="test-clinician",
-                    hashed_password=get_password_hash("test-clinician-password"),
-                    role=RoleEnum.SHIFT_LEAD,
-                ),
-            ]
-        )
-        db.add(
-            AppointmentSlot(
-                specialty="General outpatient",
-                starts_at=datetime.utcnow() + timedelta(days=1),
-                capacity=1,
-                booked_count=0,
-            )
-        )
-        db.commit()
-
-    def override_get_db() -> Generator:
-        with testing_session() as db:
-            yield db
-
-    app.dependency_overrides[get_db] = override_get_db
-    with TestClient(app) as test_client:
-        yield test_client
-    app.dependency_overrides.clear()
-    Base.metadata.drop_all(bind=engine)
-    engine.dispose()
+from backend.models.domain import RoleEnum
 
 
 def access_token(client: TestClient, username: str, password: str) -> str:

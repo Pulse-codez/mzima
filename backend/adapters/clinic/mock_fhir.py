@@ -20,7 +20,7 @@ class MockClinicFHIRAdapter:
         fhir_resource = {
             "resourceType": "Appointment",
             "id": str(app_request.id),
-            "status": "booked" if app_request.status == "APPROVED" else "proposed",
+            "status": "booked" if app_request.status in {"APPROVED", "BOOKED"} else "proposed",
             "serviceCategory": [
                 {
                     "coding": [

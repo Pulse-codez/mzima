@@ -1,14 +1,11 @@
 import os
-import sys
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if PROJECT_ROOT not in sys.path:
-    sys.path.insert(0, PROJECT_ROOT)
 
-from app.db.session import SessionLocal
-from app.services.flow.seeding import ensure_flow_reference_data
+from backend.db.session import SessionLocal
+from backend.services.flow.seeding import ensure_flow_reference_data
 
-PDF_DIR = os.path.join(PROJECT_ROOT, "app")
+PDF_DIR = os.path.join(PROJECT_ROOT, "backend", "data")
 
 
 def main():

@@ -3,11 +3,10 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.orm import Session
 
-<<<<<<< HEAD
-from app.core.config import settings
-from app.core.security import get_password_hash
-from app.db.session import SessionLocal
-from app.models.domain import (
+from backend.core.config import settings
+from backend.core.security import get_password_hash
+from backend.db.session import SessionLocal
+from backend.models.domain import (
     AppointmentSlot,
     AppointmentRequest,
     RoleEnum,
@@ -15,12 +14,6 @@ from app.models.domain import (
     Visit,
     VisitStatusEnum,
 )
-=======
-from backend.db.session import SessionLocal
-from backend.models.domain import RoleEnum, User, Visit, VisitStatusEnum
-
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
->>>>>>> upstream/main
 
 
 DEMO_ACCOUNTS = (
@@ -32,8 +25,8 @@ DEMO_ACCOUNTS = (
 
 
 def seed_demo_data() -> None:
-    if not settings.DATABASE_URL.startswith("sqlite"):
-        raise RuntimeError("Synthetic demo seeding is restricted to a local SQLite database.")
+    if settings.ENV == "production":
+        raise RuntimeError("Synthetic demo seeding is prohibited when ENV=production.")
 
     db: Session = SessionLocal()
     credentials: list[tuple[str, str]] = []

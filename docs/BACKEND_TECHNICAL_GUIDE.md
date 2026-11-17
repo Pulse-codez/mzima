@@ -28,8 +28,8 @@ pip install -e ".[dev]"
 ### 2. Configure Environment
 
 ```bash
-cp backend/.env.example backend/.env
-# Edit backend/.env with your PostgreSQL credentials
+cp .env.example .env
+# Edit the root .env with your PostgreSQL credentials
 ```
 
 Required variables in `.env`:
@@ -52,10 +52,10 @@ alembic upgrade head
 
 ```bash
 # Development (auto-reload)
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 
 # Production
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+uvicorn backend.main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
 ### 5. Verify
@@ -68,39 +68,23 @@ uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 
 ## Project Structure
 
-```
+```text
 backend/
-├── app/
-│   ├── main.py                 # FastAPI app factory, health/ready endpoints
-│   ├── core/
-│   │   ├── config.py           # Pydantic Settings (env-driven config)
-│   │   └── security.py         # Argon2 hashing, JWT token creation/validation
-│   ├── db/
-│   │   └── session.py          # SQLAlchemy engine, session factory, Base
-│   ├── models/
-│   │   └── domain.py           # SQLAlchemy ORM models (User, Visit, AuditEvent...)
-│   ├── schemas/
-│   │   ├── domain.py           # Pydantic models for visits, queue events
-│   │   └── auth.py             # Token, UserResponse schemas
-│   ├── api/
-│   │   ├── deps.py             # FastAPI dependencies (DB, auth, RBAC)
-│   │   └── v1/
-│   │       ├── router.py       # APIRouter aggregation
-│   │       └── endpoints/
-│   │           ├── auth.py     # POST /auth/login, GET /auth/me
-│   │           ├── appointments.py
-│   │           └── queue.py
-│   ├── services/
-│   │   ├── queue/engine.py     # Queue prioritization logic (SATS/TEWS/ETAT)
-│   │   └── audit/service.py    # Audit logging
-│   ├── adapters/
-│   │   └── clinic/mock_fhir.py # External clinic system integration stub
-│   └── mcp/
-│       └── server.py           # Model Context Protocol server
-├── migrations/                 # Alembic migration scripts
-├── alembic.ini                 # Alembic configuration
-├── pyproject.toml              # Project metadata & dependencies
-└── .env.example                # Environment template
+├── main.py                     # FastAPI app and health/readiness endpoints
+├── core/                       # Pydantic settings and JWT/password security
+├── db/session.py               # SQLAlchemy engine, session factory, Base
+├── models/                     # Domain and flow ORM models
+├── schemas/                    # API request and response schemas
+├── api/                        # Dependencies and versioned API routers
+├── services/                   # Queue, flow, audit, appointment services
+├── adapters/clinic/            # Mock FHIR adapter
+├── mcp/server.py               # FastMCP and operational tool registrations
+└── data/                       # Synthetic source datasets and reference PDFs
+
+migrations/                     # Alembic revisions at repository root
+alembic.ini                     # Authoritative migration configuration
+pyproject.toml                  # Authoritative package metadata and dependencies
+.env.example                    # Root environment template
 ```
 
 ---
@@ -251,7 +235,7 @@ Return updated Visit
 CLERK < NURSE < SHIFT_LEAD < ADMIN
 
 # Usage in endpoints
-from app.api.deps import RoleChecker
+from backend.api.deps import RoleChecker
 
 @router.post("/admin-only")
 def admin_endpoint(user: User = Depends(RoleChecker([RoleEnum.ADMIN]))):
@@ -313,7 +297,7 @@ All mutating operations emit `AuditEvent`:
 ```bash
 pytest -v
 # or with coverage
-pytest --cov=app --cov-report=term-missing
+pytest --cov=backend --cov-report=term-missing
 ```
 
 ### Adding Migrations
@@ -328,10 +312,10 @@ alembic upgrade head
 
 ```bash
 # Type checking (if mypy configured)
-mypy app/
+mypy backend/
 
 # Linting
-ruff check app/
+ruff check backend/
 ```
 
 ---

@@ -82,3 +82,9 @@ class TextExtractionRequest(BaseModel):
 
 class BottleneckScanRequest(BaseModel):
     service_points: list[str | None] | None = None
+
+
+class OperationalQueryRequest(BaseModel):
+    model_config = {"str_strip_whitespace": True}
+
+    query: str = Field(..., min_length=1, max_length=500)

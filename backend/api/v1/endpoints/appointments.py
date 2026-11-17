@@ -1,21 +1,13 @@
 import uuid
-<<<<<<< HEAD:app/api/v1/endpoints/appointments.py
 from contextlib import nullcontext
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
-
-from app.api.deps import RoleChecker, get_current_user, get_db
-from app.core.config import settings
-from app.mcp.appointment_tools import get_appointment_slots, score_and_propose_route
-from app.models.domain import (
-=======
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from backend.adapters.clinic.mock_fhir import MockClinicFHIRAdapter
 from backend.api.deps import RoleChecker, get_current_user, get_db
+from backend.core.config import settings
 from backend.models.domain import (
->>>>>>> upstream/main:backend/api/v1/endpoints/appointments.py
     AppointmentRequest,
     ClinicianDecision,
     RoleEnum,
@@ -28,18 +20,10 @@ from backend.schemas.domain import (
     ClinicianDecisionCreate,
     ClinicianDecisionResponse,
 )
-<<<<<<< HEAD:app/api/v1/endpoints/appointments.py
-from app.services.audit.service import log_audit_event
-from app.services.appointments.local_agent import (
-    LocalAgentError,
-    commit_via_mcp_sync,
-    run_local_agent_sync,
-)
-from app.services.appointments.workflow import issue_approval_token
-=======
+from backend.services.appointments.local_agent import run_local_agent_sync
+from backend.services.appointments.tools import get_appointment_slots, score_and_propose_route
+from backend.services.appointments.workflow import ApprovalError, issue_approval_token, review_and_commit
 from backend.services.audit.service import log_audit_event
-from backend.adapters.clinic.mock_fhir import MockClinicFHIRAdapter
->>>>>>> upstream/main:backend/api/v1/endpoints/appointments.py
 
 router = APIRouter()
 
@@ -52,10 +36,20 @@ router = APIRouter()
 def submit_appointment_request(
     request_in: AppointmentRequestCreate, db: Session = Depends(get_db)
 ):
-    proposal = score_and_propose_route(db, request_in.requested_specialty)
+    patient_id = request_in.patient_identifier.strip()
+    specialty = request_in.requested_specialty.strip()
+
+    try:
+        proposal = score_and_propose_route(db, specialty)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
     app_request = AppointmentRequest(
-        patient_identifier=request_in.patient_identifier,
-        requested_specialty=request_in.requested_specialty,
+        patient_identifier=patient_id,
+        requested_specialty=specialty,
         status="PENDING_REVIEW",
         proposed_slot_id=uuid.UUID(proposal["slot_id"]) if proposal["slot_id"] else None,
         agent_proposal=proposal,
@@ -70,7 +64,7 @@ def submit_appointment_request(
         action="SUBMIT_APPOINTMENT_REQUEST",
         entity_type="AppointmentRequest",
         entity_id=str(app_request.id),
-        payload={"specialty": request_in.requested_specialty, "proposal": proposal},
+        payload={"specialty": specialty, "proposal": proposal},
     )
 
     if settings.LOCAL_AGENT_ENABLED:
@@ -100,8 +94,24 @@ def submit_appointment_request(
 
 
 @router.get("/slots", response_model=list[AppointmentSlotResponse])
-def list_available_slots(specialty: str, db: Session = Depends(get_db)):
-    return get_appointment_slots(db, specialty)
+def list_available_slots(
+    specialty: str = Query(..., min_length=1, max_length=100),
+    from_date: datetime | None = Query(default=None),
+    to_date: datetime | None = Query(default=None),
+    db: Session = Depends(get_db),
+):
+    try:
+        return get_appointment_slots(
+            db,
+            specialty,
+            from_date=from_date,
+            to_date=to_date,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
 
 
 @router.get(
@@ -147,7 +157,7 @@ def submit_clinician_decision(
     if app_request.status != "PENDING_REVIEW":
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="Appointment request has already been decided",
+            detail=f"Appointment request has already been decided (status '{app_request.status}')",
         )
 
     approval_token = issue_approval_token(
@@ -156,10 +166,10 @@ def submit_clinician_decision(
         decision=decision_in.decision,
         reason=decision_in.reason,
     )
-    result = commit_via_mcp_sync(approval_token, lambda: nullcontext(db))
-    if result.get("status") == "ERROR":
-        db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=result["detail"])
+    try:
+        review_and_commit(db, approval_token)
+    except ApprovalError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
     decision = (
         db.query(ClinicianDecision)
@@ -213,7 +223,7 @@ def sync_approved_appointment(
     request = db.query(AppointmentRequest).filter(AppointmentRequest.id == request_id).first()
     if not request:
         raise HTTPException(status_code=404, detail="Appointment request not found")
-    if request.status != "APPROVED":
+    if request.status not in {"APPROVED", "BOOKED"}:
         raise HTTPException(status_code=409, detail="Only approved requests can be synchronized")
     if request.integration_idempotency_key and request.integration_idempotency_key != idempotency_key:
         raise HTTPException(status_code=409, detail="Request was already synchronized with another idempotency key")

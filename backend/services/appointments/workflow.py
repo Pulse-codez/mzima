@@ -6,13 +6,34 @@ from jose import JWTError, jwt
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
-from app.mcp.appointment_tools import reserve_appointment_slot
-from app.models.domain import AuditEvent, AppointmentRequest, ClinicianDecision, RoleEnum, User
+from backend.core.config import settings
+from backend.models.domain import (
+    AppointmentRequest,
+    AuditEvent,
+    ClinicianDecision,
+    RoleEnum,
+    User,
+)
+from backend.services.appointments.tools import reserve_appointment_slot
 
 
 class ApprovalError(Exception):
     pass
+
+
+def _is_proposal_expired(agent_proposal: dict[str, Any] | None, now: datetime) -> bool:
+    if not isinstance(agent_proposal, dict):
+        return False
+    raw_expires_at = agent_proposal.get("expires_at")
+    if not raw_expires_at or not isinstance(raw_expires_at, str):
+        return False
+    try:
+        expires_at = datetime.fromisoformat(raw_expires_at.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if expires_at.tzinfo is not None:
+        expires_at = expires_at.replace(tzinfo=None)
+    return now > expires_at
 
 
 def issue_approval_token(
@@ -36,7 +57,13 @@ def issue_approval_token(
     )
 
 
-def review_and_commit(db: Session, approval_token: str) -> dict[str, Any]:
+def review_and_commit(
+    db: Session,
+    approval_token: str,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    current_time = now or datetime.utcnow()
+
     try:
         claims = jwt.decode(
             approval_token,
@@ -72,11 +99,34 @@ def review_and_commit(db: Session, approval_token: str) -> dict[str, Any]:
     if request is None:
         raise ApprovalError("Appointment request not found")
     if request.status != "PENDING_REVIEW":
-        raise ApprovalError("Appointment request has already been decided")
+        raise ApprovalError(
+            f"Appointment request has already been decided (status '{request.status}')"
+        )
 
     decision_value = claims.get("decision")
     if decision_value not in {"APPROVE", "REJECT"}:
         raise ApprovalError("Unsupported clinician decision")
+
+    if decision_value == "APPROVE" and _is_proposal_expired(request.agent_proposal, current_time):
+        request.status = "EXPIRED"
+        db.add(
+            AuditEvent(
+                actor_id=clinician.id,
+                action="PROPOSAL_EXPIRED",
+                entity_type="AppointmentRequest",
+                entity_id=str(request.id),
+                payload={
+                    "proposed_slot_id": str(request.proposed_slot_id)
+                    if request.proposed_slot_id
+                    else None,
+                    "expires_at": request.agent_proposal.get("expires_at")
+                    if isinstance(request.agent_proposal, dict)
+                    else None,
+                },
+            )
+        )
+        db.commit()
+        raise ApprovalError("The booking proposal has expired and cannot be approved")
 
     booked_slot_id = None
     if decision_value == "APPROVE":
@@ -86,9 +136,10 @@ def review_and_commit(db: Session, approval_token: str) -> dict[str, Any]:
             db,
             request.proposed_slot_id,
             specialty=request.requested_specialty,
+            now=current_time,
         )
         if slot is None:
-            raise ApprovalError("The proposed slot is no longer available")
+            raise ApprovalError("The proposed slot has expired or is no longer available")
         request.booked_slot_id = slot.id
         request.status = "BOOKED"
         booked_slot_id = str(slot.id)
@@ -112,7 +163,9 @@ def review_and_commit(db: Session, approval_token: str) -> dict[str, Any]:
             payload={
                 "decision": decision_value,
                 "reason": decision.reason,
-                "proposed_slot_id": str(request.proposed_slot_id) if request.proposed_slot_id else None,
+                "proposed_slot_id": str(request.proposed_slot_id)
+                if request.proposed_slot_id
+                else None,
                 "booked_slot_id": booked_slot_id,
                 "approval_jti": approval_jti,
             },

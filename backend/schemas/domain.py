@@ -8,18 +8,13 @@ from backend.models.domain import RoleEnum, VisitStatusEnum
 
 # --- Walk-in Schemas ---
 class VisitCreate(BaseModel):
-<<<<<<< HEAD:app/schemas/domain.py
+    patient_identifier: str | None = Field(None, min_length=1, max_length=100)
     age_band: Literal["under_5", "adult", "over_65"] = Field(
         ..., description="'under_5', 'adult', or 'over_65'"
     )
     visit_type: Literal["new", "review", "refill"] = Field(
         ..., description="'new', 'review', or 'refill'"
     )
-=======
-    patient_identifier: str = Field(..., min_length=1, max_length=100)
-    age_band: str = Field(..., description="'under_5', 'adult', or 'over_65'")
-    visit_type: str = Field(..., description="'new', 'review', or 'refill'")
->>>>>>> upstream/main:backend/schemas/domain.py
     red_flags: dict[str, bool] = Field(default_factory=dict)
 
 
@@ -80,10 +75,13 @@ class AppointmentRequestResponse(BaseModel):
     requested_specialty: str
     status: str
     created_at: datetime
-<<<<<<< HEAD:app/schemas/domain.py
     proposed_slot_id: uuid.UUID | None = None
     booked_slot_id: uuid.UUID | None = None
     agent_proposal: dict = Field(default_factory=dict)
+    integration_status: str = "NOT_SYNCED"
+    external_system: str | None = None
+    external_reference: str | None = None
+    integrated_at: datetime | None = None
 
     class Config:
         from_attributes = True
@@ -95,15 +93,6 @@ class AppointmentSlotResponse(BaseModel):
     starts_at: datetime
     capacity: int
     booked_count: int
-=======
-    integration_status: str = "NOT_SYNCED"
-    external_system: str | None = None
-    external_reference: str | None = None
-    integrated_at: datetime | None = None
->>>>>>> upstream/main:backend/schemas/domain.py
-
-    class Config:
-        from_attributes = True
 
 
 class ClinicianDecisionCreate(BaseModel):

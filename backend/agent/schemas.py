@@ -1,7 +1,24 @@
 from __future__ import annotations
+import enum
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List, Literal, Optional
 from pydantic import BaseModel, Field, ConfigDict
+
+
+class OperationalIntent(str, enum.Enum):
+    QUEUE_STATUS = "queue_status"
+    LONGEST_QUEUE = "longest_queue"
+    BOTTLENECKS = "bottlenecks"
+    EXPLAIN_QUEUE_GROWTH = "explain_queue_growth"
+    AVAILABLE_SLOTS = "available_slots"
+    SUPERVISOR_RECOMMENDATIONS = "supervisor_recommendations"
+    UNSUPPORTED = "unsupported"
+
+
+class OperationalIntentClassification(BaseModel):
+    intent: OperationalIntent
+    service_point: str | None = None
+    specialty: str | None = None
 
 
 class PatientInput(BaseModel):
