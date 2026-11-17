@@ -1,194 +1,131 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from '../../router';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Home, BookOpen, Sparkles, Menu, X, Sun, Moon } from 'lucide-react';
+import { Link, useNavigate } from '../../router';
+import { Menu, X } from 'lucide-react';
+import { Button } from '../ui/Button';
+import { Logo } from '../ui/Logo';
+import { SpotlightNavbar, NavItem } from '../ui/SpotlightNavbar';
+import { cn } from '../../lib/utils';
 
-const leftItems = [
-  { label: 'Home', href: '/', icon: Home },
-  { label: 'How it works', href: '/how-it-works', icon: BookOpen },
+export const NAV_ITEMS: NavItem[] = [
+  { label: 'Home', href: '#home' },
+  { label: 'Platform', href: '#platform' },
+  { label: 'How it works', href: '#how-it-works' },
+  { label: 'Capabilities', href: '#capabilities' },
+  { label: 'Simulation', href: '/simulation' },
 ];
 
-const rightItems = [
-  { label: 'Story', href: '/story', icon: Sparkles },
-  { label: 'AI extract', href: '/extract', icon: Sparkles },
-];
+interface HeaderProps {
+  activeIndex?: number;
+  /** When true, the header floats transparently over the hero and adds a backdrop as the user scrolls. */
+  floating?: boolean;
+}
 
-const NavLink = ({ href, icon: Icon, label }: { href: string; icon: React.ComponentType<{ className?: string }>; label: string }) => (
-  <Link
-    to={href}
-    className="group flex items-center gap-1.5 text-sm font-medium text-emerald-900/70 hover:text-emerald-900 transition-colors whitespace-nowrap"
-  >
-    <Icon className="w-4 h-4 opacity-70 group-hover:opacity-100" />
-    <span>{label}</span>
-  </Link>
-);
+export function Header({ activeIndex = 0, floating = false }: HeaderProps) {
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
-export function Header() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    if (!floating) return;
+    const onScroll = () => setScrolled(window.scrollY > 24);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [floating]);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
+
+  const go = (item: NavItem) => {
+    setOpen(false);
+    if (item.href.startsWith('/')) {
+      navigate(item.href);
+      return;
+    }
+    const el = document.querySelector(item.href);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    navigate(`/${item.href}`);
+  };
+
+  const transparent = floating && !scrolled && !open;
 
   return (
-    <>
-      <header className="fixed top-0 inset-x-0 z-50 h-16 flex px-0">
-        {/* Left Side Bar */}
-        <div className="flex-1 h-10 bg-peach-50 relative min-w-0">
-          <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
-            <line x1="0" y1="39.5" x2="100%" y2="39.5" stroke="currentColor" strokeOpacity={0.05} strokeWidth={0.5} className="text-emerald-900" />
-            <line x1="0" y1="36.5" x2="100%" y2="36.5" stroke="currentColor" strokeOpacity={0.05} strokeWidth={0.5} className="text-emerald-900" />
-          </svg>
+    <div className={cn('sticky top-0 z-50 transition-colors duration-300', transparent ? 'bg-transparent' : 'bg-egyptian-deep/95 backdrop-blur border-b border-stone/20')}>
+      {!floating && (
+        <div className="border-b border-stone/15 bg-egyptian-deep">
+          <div className="mx-auto flex max-w-[1200px] items-center gap-2.5 px-5 py-2 text-[13px] font-medium text-stone-light lg:px-10">
+            <span role="img" aria-label="Prototype information" className="h-2 w-2 rounded-full bg-scarlet" />
+            Level 6 Hospitals, Kenya
+          </div>
         </div>
+      )}
 
-        {/* Notch Container */}
-        <div className="flex h-16 relative z-10 shrink-0 -ml-px">
-          {/* Left Slice */}
-          <div className="w-[50px] h-full relative shrink-0">
-            <div className="absolute inset-0 bg-peach-50" style={{ clipPath: "path('M0 0 H50 V64 C25 64 25 40 0 40 Z')" }} />
-            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 50 64">
-              <path d="M0 39.5 C25 39.5 25 63.5 50 63.5" fill="none" stroke="currentColor" strokeOpacity={0.05} strokeWidth={0.5} className="text-emerald-900" />
-              <path d="M0 36.5 C25 36.5 25 60.5 50 60.5" fill="none" stroke="currentColor" strokeOpacity={0.05} strokeWidth={0.5} className="text-emerald-900" />
-            </svg>
+      <header>
+        <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-4 px-5 py-4 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:px-10">
+          <Link to="/" aria-label="Mzima home" className="justify-self-start">
+            <Logo />
+          </Link>
+
+          <div className="hidden lg:block">
+            <SpotlightNavbar items={NAV_ITEMS} defaultActiveIndex={activeIndex} onItemClick={go} />
           </div>
 
-          {/* Center Slice */}
-          <div className="flex-1 h-full relative min-w-0 -ml-px">
-            <div className="absolute inset-0 bg-peach-50">
-              <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none">
-                <line x1="0" y1="63.5" x2="100%" y2="63.5" stroke="currentColor" strokeOpacity={0.05} strokeWidth={0.5} className="text-emerald-900" />
-                <line x1="0" y1="60.5" x2="100%" y2="60.5" stroke="currentColor" strokeOpacity={0.05} strokeWidth={0.5} className="text-emerald-900" />
-              </svg>
-            </div>
+          <div className="hidden justify-self-end gap-3 lg:flex">
+            <Button variant="outline" onClick={() => navigate('/login')}>
+              Log in
+            </Button>
+            <Button variant="solid" onClick={() => navigate('/sign-up')}>
+              Sign up
+            </Button>
+          </div>
 
-            <div className="relative w-full h-full flex items-end justify-between pb-2 px-4 md:px-8">
-              {/* Desktop Left Nav */}
-              <nav className="hidden md:flex gap-8 mb-1 shrink-0">
-                {leftItems.map((item) => (
-                  <NavLink key={item.label} {...item} />
-                ))}
-              </nav>
+          <button
+            type="button"
+            className="grid h-11 w-11 place-items-center rounded-full border border-stone/40 text-white lg:hidden"
+            aria-expanded={open}
+            aria-controls="mobile-menu"
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            onClick={() => setOpen((o) => !o)}
+          >
+            {open ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
+          </button>
+        </div>
 
-              {/* Mobile Menu Button */}
-              <button
-                className="md:hidden mb-1 p-1 text-emerald-900/70 hover:text-emerald-900 transition-colors"
-                onClick={() => setIsOpen((o) => !o)}
-                aria-label="Toggle menu"
-              >
-                {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
-
-              {/* Logo */}
-              <div className="flex justify-center shrink-0 mx-2 md:mx-4 mt-1">
-                <Link to="/" className="flex items-center justify-center group">
-                  <span className="font-display text-xl font-extrabold text-emerald-800 hover:scale-105 transition-transform">
-                    Mzima
-                  </span>
-                </Link>
-              </div>
-
-              {/* Desktop Right Nav */}
-              <nav className="hidden md:flex gap-6 items-center shrink-0">
-                {rightItems.map((item) => (
-                  <NavLink key={item.label} {...item} />
-                ))}
-                <div className="flex gap-4 pl-4 border-l border-emerald-900/10 shrink-0 items-center">
+        {open && (
+          <nav id="mobile-menu" aria-label="Mobile navigation" className="border-t border-stone/20 bg-egyptian-deep lg:hidden">
+            <ul className="mx-auto grid max-w-[1200px] gap-1 px-5 py-4">
+              {NAV_ITEMS.map((item) => (
+                <li key={item.label}>
                   <button
                     type="button"
-                    className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-emerald-900/5 transition-colors text-emerald-900/70 hover:text-emerald-900"
-                    aria-label="Theme toggle"
-                    onClick={() => {
-                      document.documentElement.classList.toggle('dark');
-                    }}
+                    onClick={() => go(item)}
+                    className="flex min-h-[44px] w-full items-center rounded-xl px-4 text-left text-base font-semibold text-white hover:bg-white/10"
                   >
-                    {mounted ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                    {item.label}
                   </button>
-                  <Link to="/login" className="text-sm font-medium text-emerald-900/70 hover:text-emerald-900 transition-colors whitespace-nowrap">
-                    Log in
-                  </Link>
-                  <Link
-                    to="/sign-up"
-                    className="px-3 py-1.5 text-sm font-medium text-white bg-emerald-900 rounded-2xl hover:bg-emerald-800 transition-colors shadow-sm shadow-emerald-900/10 whitespace-nowrap"
-                  >
-                    Sign up
-                  </Link>
-                </div>
-              </nav>
-
-              {/* Mobile Right Actions */}
-              <div className="md:hidden flex items-center gap-2 mb-1">
-                <button
-                  type="button"
-                  className="flex items-center justify-center w-9 h-9 rounded-full hover:bg-emerald-900/5 transition-colors text-emerald-900/70 hover:text-emerald-900"
-                  aria-label="Theme toggle"
-                >
-                  <Sun className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Right Slice */}
-          <div className="w-[50px] h-full relative shrink-0 -ml-px">
-            <div className="absolute inset-0 bg-peach-50" style={{ clipPath: "path('M0 0 H50 V40 C25 40 25 64 0 64 Z')" }} />
-            <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 50 64">
-              <path d="M0 63.5 C25 63.5 25 39.5 50 39.5" fill="none" stroke="currentColor" strokeOpacity={0.05} strokeWidth={0.5} className="text-emerald-900" />
-              <path d="M0 60.5 C25 60.5 25 36.5 50 36.5" fill="none" stroke="currentColor" strokeOpacity={0.05} strokeWidth={0.5} className="text-emerald-900" />
-            </svg>
-          </div>
-        </div>
-
-        {/* Right Side Bar */}
-        <div className="flex-1 h-10 bg-peach-50 relative min-w-0 -ml-px">
-          <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none">
-            <line x1="0" y1="39.5" x2="100%" y2="39.5" stroke="currentColor" strokeOpacity={0.05} strokeWidth={0.5} className="text-emerald-900" />
-            <line x1="0" y1="36.5" x2="100%" y2="36.5" stroke="currentColor" strokeOpacity={0.05} strokeWidth={0.5} className="text-emerald-900" />
-          </svg>
-        </div>
-      </header>
-
-      {/* Mobile Menu */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-x-0 top-16 z-40 bg-peach-50 border-b border-emerald-900/5 p-4 md:hidden shadow-lg"
-          >
-            <nav className="flex flex-col gap-2">
-              {[...leftItems, ...rightItems].map((item) => (
-                <Link
-                  key={item.label}
-                  to={item.href}
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-emerald-900/5 transition-colors"
-                  onClick={() => setIsOpen(false)}
-                >
-                  <item.icon className="w-5 h-5 opacity-70" />
-                  <span className="font-medium text-emerald-900/90">{item.label}</span>
-                </Link>
+                </li>
               ))}
-              <div className="h-px bg-emerald-900/10 my-2" />
-              <div className="flex flex-col gap-2">
-                <Link
-                  to="/login"
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-emerald-900/5 transition-colors font-medium text-emerald-900/90"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Log in
-                </Link>
-                <Link
-                  to="/sign-up"
-                  className="flex items-center justify-center gap-2 p-3 rounded-lg bg-emerald-900 text-white font-medium mt-2"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Sign up
-                </Link>
-              </div>
-            </nav>
-          </motion.div>
+            </ul>
+            <div className="mx-auto grid max-w-[1200px] grid-cols-2 gap-3 px-5 pb-5">
+              <Button variant="outline" onClick={() => { setOpen(false); navigate('/login'); }}>
+                Log in
+              </Button>
+              <Button variant="solid" onClick={() => { setOpen(false); navigate('/sign-up'); }}>
+                Sign up
+              </Button>
+            </div>
+          </nav>
         )}
-      </AnimatePresence>
-    </>
+      </header>
+    </div>
   );
 }

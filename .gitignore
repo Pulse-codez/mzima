@@ -22,13 +22,8 @@ frontend/node_modules/
 dist/
 frontend/dist/
 build/
-.next/
 frontend/*.tsbuildinfo
 *.tsbuildinfo
-vite.config.js
-vite.config.d.ts
-frontend/vite.config.js
-frontend/vite.config.d.ts
 
 # Local development database files
 *.db
@@ -50,3 +45,4 @@ coverage/
 htmlcov/
 .pytest_cache/
 .neon
+.originkit/

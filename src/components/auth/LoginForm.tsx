@@ -3,6 +3,9 @@ import { Link, useLocation, useNavigate } from '../../router';
 import { PasswordField } from './PasswordField';
 import { useAuth } from '../../auth/AuthContext';
 import { AuthFailure } from '../../auth/api';
+import { Button } from '../ui/Button';
+import { CheckCircle2 } from 'lucide-react';
+import { authInput, authLabel } from './styles';
 
 function roleHome(role: string | undefined): string {
   if (role === 'clerk') return '/visits';
@@ -14,7 +17,7 @@ function roleHome(role: string | undefined): string {
 export function LoginForm() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, status } = useAuth();
+  const { login } = useAuth();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -68,13 +71,10 @@ export function LoginForm() {
         const queryFrom = location.query.from;
         const pendingFrom = Array.isArray(queryFrom) ? queryFrom[0] : queryFrom;
         const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        window.setTimeout(() => {
-          if (pendingFrom) {
-            navigate(pendingFrom, { replace: true });
-          } else {
-            navigate(roleHome(user.role), { replace: true });
-          }
-        }, reduceMotion ? 150 : 700);
+        window.setTimeout(
+          () => navigate(pendingFrom ? pendingFrom : roleHome(user.role), { replace: true }),
+          reduceMotion ? 150 : 700,
+        );
       } catch (err) {
         if (err instanceof AuthFailure) {
           if (err.kind === 'credentials') {
@@ -89,7 +89,7 @@ export function LoginForm() {
             setFormError(err.message);
           }
         } else {
-          setFormError('We can\'t reach the server right now. Please try again.');
+          setFormError("We can't reach the server right now. Please try again.");
         }
       } finally {
         setSubmitting(false);
@@ -100,43 +100,31 @@ export function LoginForm() {
 
   if (success) {
     return (
-      <div className="success-box" role="status" aria-live="polite">
-        <div aria-hidden="true" style={{ fontSize: 42, color: 'var(--emerald-700)' }}>✓</div>
-        <h2>Signed in</h2>
-        <p className="sub" style={{ margin: '8px auto 0' }}>Taking you to your workspace.</p>
+      <div className="py-12 text-center" role="status" aria-live="polite">
+        <CheckCircle2 className="mx-auto h-14 w-14 text-stone-light" aria-hidden="true" />
+        <h2 className="mt-6 font-heading text-2xl font-extrabold text-white">Signed in</h2>
+        <p className="mt-2 text-white/85">Taking you to your workspace.</p>
       </div>
     );
   }
 
   return (
     <>
-      <h1 className="display display-md" style={{ color: 'var(--emerald-800)', marginBottom: 6 }}>
-        Welcome back to the queue
-      </h1>
-      <p className="sub" style={{ marginBottom: 24, fontSize: 15 }}>
-        Sign in to continue. Use the account your shift lead gave you.
-      </p>
+      <h1 className="font-heading text-3xl font-extrabold text-white">Welcome back</h1>
+      <p className="mt-2 text-white/85">Sign in to continue to your workspace.</p>
 
-      <div aria-live="polite" aria-atomic="true" style={{ minHeight: 24, marginBottom: 12 }}>
-        {formError && (
-          <p
-            className="err"
-            role={formError ? 'alert' : undefined}
-            style={{ color: '#B00020', fontSize: 14, fontWeight: 600, margin: 0 }}
-          >
-            {formError}
-          </p>
-        )}
-        {cooldown > 0 && (
-          <p style={{ color: 'var(--emerald-800)', fontSize: 13, margin: 0 }}>
-            You can try again in {cooldown}s.
-          </p>
-        )}
-      </div>
+      {formError && (
+        <div className="mt-6 border-l-4 border-scarlet bg-egyptian-deep p-4" role="alert">
+          <p className="text-sm font-semibold text-white">{formError}</p>
+          {cooldown > 0 && <p className="mt-1 text-sm text-white/85">You can try again in {cooldown}s.</p>}
+        </div>
+      )}
 
-      <form onSubmit={handleSubmit} noValidate style={{ display: 'grid', gap: 16 }}>
-        <div className="field">
-          <label htmlFor="login-username">Username</label>
+      <form onSubmit={handleSubmit} noValidate className="mt-8 space-y-5">
+        <div>
+          <label htmlFor="login-username" className={authLabel}>
+            Username
+          </label>
           <input
             id="login-username"
             type="text"
@@ -148,18 +136,13 @@ export function LoginForm() {
             aria-invalid={touched.username && !!errors.username ? true : undefined}
             aria-describedby={touched.username && errors.username ? 'login-username-error' : undefined}
             disabled={disabled}
-            style={{
-              minHeight: 48,
-              padding: '12px 14px',
-              border: '1px solid var(--peach-300)',
-              borderRadius: 12,
-              fontSize: 15,
-              background: '#fff',
-              color: 'var(--ink)',
-            }}
+            placeholder="Enter your username"
+            className={authInput}
           />
           {touched.username && errors.username && (
-            <span className="err" id="login-username-error">{errors.username}</span>
+            <p className="mt-2 text-sm font-semibold text-white" id="login-username-error">
+              {errors.username}
+            </p>
           )}
         </div>
 
@@ -175,50 +158,38 @@ export function LoginForm() {
           disabled={disabled}
         />
 
-        {/* "Remember this device" removed until the backend supports it. TODO: revisit. */}
-        <button
-          type="submit"
-          className="btn btn-primary"
-          disabled={disabled}
-          style={{ width: '100%', minHeight: 48 }}
-        >
-          {submitting ? (
-            <>
-              <span className="spinner" aria-hidden="true" />
-              Signing in…
-            </>
-          ) : cooldown > 0 ? (
-            'Wait…'
-          ) : (
-            'Sign in'
-          )}
-        </button>
-
-        <p style={{ textAlign: 'center', margin: 0, fontSize: 14 }}>
+        <div className="flex items-center justify-between text-sm">
+          <label className="flex cursor-pointer items-center gap-2 text-white/85">
+            <input type="checkbox" className="h-4 w-4 accent-white" />
+            Remember me
+          </label>
           <button
             type="button"
-            className="btn btn-ghost"
             onClick={() => setShowForgot((s) => !s)}
-            disabled={disabled}
-            style={{ minHeight: 36 }}
+            className="min-h-[44px] font-semibold text-white underline underline-offset-4 hover:text-stone-light"
           >
             Forgot password?
           </button>
-        </p>
+        </div>
+
         {showForgot && (
-          <p className="sub" style={{ textAlign: 'center', fontSize: 13, margin: 0 }} role="status">
+          <p className="rounded-xl border border-stone/50 bg-egyptian-deep p-3 text-sm text-white/85" role="status">
             Ask your shift lead to reset your access.
           </p>
         )}
+
+        <Button type="submit" variant="scarlet" size="lg" disabled={disabled} className="w-full">
+          {submitting ? 'Signing in…' : cooldown > 0 ? 'Please wait…' : 'Sign in'}
+        </Button>
       </form>
 
-      <p style={{ textAlign: 'center', marginTop: 20, fontSize: 14, color: 'var(--muted)' }}>
+      <p className="mt-8 text-center text-sm text-white/85">
         Need access?{' '}
-        <Link to="/sign-up" style={{ fontWeight: 700 }}>
+        <Link to="/sign-up" className="font-semibold text-white underline underline-offset-4 hover:text-stone-light">
           Request it here
         </Link>
       </p>
-      <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)', margin: 0 }}>
+      <p className="mt-3 text-center text-xs text-stone-light">
         Access is issued on site by a shift lead and reviewed before activation.
       </p>
     </>

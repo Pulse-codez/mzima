@@ -3,7 +3,7 @@ import { useNavigate, Link } from '../router';
 import { useAuth } from '../auth/AuthContext';
 import { AuthLayout } from '../components/auth/AuthLayout';
 
-export function ShiftLeadLogin() {
+export default function ShiftLeadLogin() {
   const navigate = useNavigate();
   const { loginShiftLead, status } = useAuth();
   const [identifier, setIdentifier] = useState('');
@@ -31,7 +31,7 @@ export function ShiftLeadLogin() {
 
   return (
     <AuthLayout>
-      <h1 className="display display-md" style={{ color: 'var(--emerald-800)', marginBottom: 6 }}>Shift Lead sign in</h1>
+      <h1 className="display display-md" style={{ color: '#FFFFFF', marginBottom: 6 }}>Shift Lead sign in</h1>
       <p className="sub" style={{ marginBottom: 24, fontSize: 15 }}>
         Use your shift lead identifier (S001 to S010). Any password works for now.
       </p>
@@ -39,12 +39,12 @@ export function ShiftLeadLogin() {
         <div className="field">
           <label htmlFor="lead-id">Shift Lead identifier</label>
           <input id="lead-id" type="text" autoFocus value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="S001"
-            style={{ minHeight: 48, padding: '12px 14px', border: '1px solid var(--peach-300)', borderRadius: 12, fontSize: 15, background: '#fff', color: 'var(--ink)' }} />
+            style={{ minHeight: 48, padding: '12px 14px', border: '1px solid #7D9BB8', borderRadius: 12, fontSize: 15, background: '#0B2478', color: '#FFFFFF' }} />
         </div>
         <div className="field">
           <label htmlFor="lead-password">Password</label>
           <input id="lead-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Any password"
-            style={{ minHeight: 48, padding: '12px 14px', border: '1px solid var(--peach-300)', borderRadius: 12, fontSize: 15, background: '#fff', color: 'var(--ink)' }} />
+            style={{ minHeight: 48, padding: '12px 14px', border: '1px solid #7D9BB8', borderRadius: 12, fontSize: 15, background: '#0B2478', color: '#FFFFFF' }} />
         </div>
         {error && <p role="alert" style={{ color: '#B00020', fontWeight: 600, margin: 0 }}>{error}</p>}
         <button type="submit" className="btn btn-primary" disabled={submitting} style={{ width: '100%', minHeight: 48 }}>

@@ -1,30 +1,36 @@
 import React from 'react';
-import NextLink from 'next/link';
-import { useRouter as useNextRouter } from 'next/router';
+import {
+  Link as RouterLink,
+  useNavigate as useRRNavigate,
+  useLocation as useRRLocation,
+  Navigate as RRNavigate,
+  type LinkProps as RRLinkProps,
+} from 'react-router-dom';
 
-type LinkProps = Omit<React.ComponentProps<typeof NextLink>, 'href'> & { href?: string; to?: string };
+type LinkProps = Omit<RRLinkProps, 'to'> & { to?: string; href?: string };
 
 export function Link({ to, href, ...props }: LinkProps) {
-  return <NextLink href={to ?? href ?? '/'} {...props} />;
+  return <RouterLink to={to ?? href ?? '/'} {...props} />;
 }
 
 export function useNavigate() {
-  const router = useNextRouter();
-  return React.useCallback((url: string, options?: { replace?: boolean }) => {
-    void (options?.replace ? router.replace(url) : router.push(url));
-  }, [router]);
+  const navigate = useRRNavigate();
+  return React.useCallback(
+    (url: string, options?: { replace?: boolean }) => {
+      void navigate(url, { replace: options?.replace });
+    },
+    [navigate],
+  );
 }
 
 export function useLocation() {
-  const router = useNextRouter();
+  const loc = useRRLocation();
   return {
-    pathname: router.pathname === '/[[...slug]]' ? router.asPath.split('?')[0] : router.pathname,
-    query: router.query as Record<string, string | string[] | undefined>,
+    pathname: loc.pathname,
+    query: Object.fromEntries(new URLSearchParams(loc.search)) as Record<string, string>,
   };
 }
 
 export function Navigate({ to, replace = false }: { to: string; replace?: boolean }) {
-  const navigate = useNavigate();
-  React.useEffect(() => navigate(to, { replace }), [navigate, replace, to]);
-  return null;
+  return <RRNavigate to={to} replace={replace} />;
 }

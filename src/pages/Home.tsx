@@ -9,7 +9,7 @@ import { ComparisonTable } from '../sections/ComparisonTable';
 import { Faq } from '../sections/Faq';
 import { ClosingCta } from '../sections/ClosingCta';
 
-export function Home() {
+export default function Home() {
   const navigate = useNavigate();
   return (
     <main id="main">

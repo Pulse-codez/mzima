@@ -5,7 +5,7 @@ import { ImageWithFallback } from '../components/ui/ImageWithFallback';
 
 const story = credits.find((c) => c.key === 'story')!;
 
-export function Story() {
+export default function Story() {
   const navigate = useNavigate();
   return (
     <main id="main">

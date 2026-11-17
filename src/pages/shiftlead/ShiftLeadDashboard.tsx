@@ -20,7 +20,7 @@ const CHECKS = [
   'I understand this decision is logged',
 ];
 
-export function ShiftLeadDashboard() {
+export default function ShiftLeadDashboard() {
   const { token, user } = useAuth();
   const [queue, setQueue] = useState<AppointmentRequest[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);

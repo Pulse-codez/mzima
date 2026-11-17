@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../auth/AuthContext';
 
-export function Triage() {
+export default function Triage() {
   const { user, logout } = useAuth();
   return (
     <main id="main" className="section">

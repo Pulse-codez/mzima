@@ -1,7 +1,7 @@
 import { useNavigate } from '../router';
 import React from 'react';
 
-export function NotFound() {
+export default function NotFound() {
   const navigate = useNavigate();
   return (
     <main id="main" className="section">
