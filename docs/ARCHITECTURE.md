@@ -1,55 +1,94 @@
-# Mzima Architecture
+# Mzima architecture
 
-**Prototype scope:** one simulated outpatient facility; synthetic data only. The repository includes deterministic slot proposals, clinician-approved booking, and a local stdio FastMCP server. The open-weight model orchestration and external clinic adapter shown below remain optional or incomplete components; this diagram is a target architecture, not a claim of production integration.
+## Scope
+
+Mzima is a synthetic-data prototype for outpatient queue management and appointment requests. The implemented system has one web client, one FastAPI service, and one Neon PostgreSQL database.
 
 ```mermaid
 flowchart LR
-  P[Patient: local web / local voice] --> APP[Local application]
-  APP --> API[Local patient and clinic REST API]
-  API --> ORCH[LangGraph state machine]
-  ORCH --> MODEL[In-country open-weight model]
-  ORCH --> MCP[Mzima MCP server]
-  MCP --> SLOTS[get_appointment_slots]
-  MCP --> PROPOSE[score_and_propose_route]
-  MCP --> COMMIT[review_and_commit]
-  ORCH --> REVIEW[Named clinician approval]
-  REVIEW --> COMMIT
-  COMMIT --> ADAPTER[Clinic scheduling adapter]
-  ADAPTER --> HIS[Clinic HMIS API or manual staff entry]
-  MCP --> AUDIT[(Append-only audit events)]
-  ORCH -. optional generic audio only .-> TTS[ElevenLabs TTS]
-  MCP -. synthetic/read-only .-> BORROWED[Self-hosted PostgreSQL MCP]
+    Browser[React + Vite<br/>root src/] -->|HTTP /api/v1| API[FastAPI<br/>backend/main.py]
+    API --> Routes[API routes<br/>auth · visits · queue · appointments · flow · audit]
+    Routes --> Services[Domain services<br/>queue · flow · appointments · audit]
+    Services --> ORM[SQLAlchemy models/session]
+    ORM --> Neon[(Neon PostgreSQL)]
+    Migrations[Alembic migrations<br/>direct Neon connection] --> Neon
+    MCP[Optional local stdio MCP server] --> Services
+    Services -.-> Adapter[Mock clinic adapter]
+    Adapter -. future .-> HMIS[Clinic/HMIS system]
 ```
 
-## Agent and trust boundaries
+The browser never connects directly to Neon. The database is accessed only by the backend. `DATABASE_URL` is the pooled Neon connection for API traffic; `DATABASE_URL_UNPOOLED` is the direct connection used by Alembic.
 
-Current implementation: `backend/services/appointments/tools.py` contains deterministic slot lookup and proposal functions. `backend/mcp/server.py` exposes these alongside read-only queue, workload, bottleneck, and recommendation tools through a local stdio FastMCP server. The optional local model orchestration in `backend/services/appointments/local_agent.py` may use only slot lookup and proposal tools; clinician-only approval is enforced separately by `backend/services/appointments/workflow.py`. The model cannot approve or commit a booking. The stdio server is not an authenticated network service.
+## Repository structure
 
-LangGraph carries a typed task state through intake, slot lookup, guidance lookup, proposal, clinician review, commit verification and response. The agent may plan and invoke tools, but cannot approve itself. The Mzima MCP server's `score_and_propose_route` creates a pending proposal; `review_and_commit` requires an authenticated clinician, explicit decision, reason, proposal ID and one-time approval token. Writes are idempotent and auditable. Uncertainty or repeated failure routes to a staff handoff.
+```text
+src/                         Active React/Vite frontend
+backend/
+  main.py                    FastAPI application entry point
+  api/v1/endpoints/          HTTP route handlers
+  services/                  Queue, flow, appointment, and audit logic
+  models/                    SQLAlchemy ORM models
+  schemas/                   Pydantic request/response models
+  db/session.py              PostgreSQL engine and session factory
+  core/config.py             Environment settings
+  mcp/server.py              Optional local stdio tools
+  adapters/clinic/           Mock clinic integration
+backend/migrations/          Alembic revisions
+tests/                       API and workflow tests
+scripts/                     Synthetic data and verification scripts
+docs/                        Architecture, privacy, deployment, and product docs
+```
 
-The model supplies structured extraction and a rationale grounded in retrieved fields. Deterministic facility-approved constraints validate allowable sectors, priorities and missing information. No generated diagnosis becomes a routing fact. The patient sees only confirmed booking information.
+The root `package.json`, `vite.config.ts`, and `src/` are the active frontend project.
 
-## Clinic API boundary
+## Main workflows
 
-The patient and staff clients call Mzima's authenticated local REST API; they do not connect to MCP directly. Prototype routes: `POST /api/appointment-requests`, `GET /api/clinic/review-queue`, `POST /api/appointment-requests/{id}/decision`, and `GET /api/appointments/{id}`. Once a clinician approves, an internal idempotent adapter sends the booking to the clinic's documented scheduling/HMIS API. If the facility has no usable API, staff see the approved booking in Mzima and enter it manually. Until a pilot site is selected, demonstrate this with a mock local clinic API; do not claim FHIR/HMIS integration exists.
+### Walk-in queue
 
-## MCP servers: built and borrowed
+```mermaid
+sequenceDiagram
+    participant Client as Staff UI
+    participant API as FastAPI
+    participant Queue as Queue service
+    participant DB as Neon PostgreSQL
 
-| Server | Ownership / access | Why |
-|---|---|---|
-| Mzima MCP | Built for the project; local and narrow | Domain-specific slot lookup, pending route scoring/proposal, and gated clinician commit are the core reusable agent tools. |
-| PostgreSQL MCP | Existing maintained server; self-hosted and read-only, synthetic/de-identified database only | Reusing a reviewed general database connector is faster than implementing generic SQL protocol handling; read-only scope avoids turning it into an unreviewed write path. |
+    Client->>API: POST /visits
+    API->>Queue: Validate and create visit
+    Queue->>DB: Save visit and audit event
+    Client->>API: GET /queue
+    API->>Queue: Calculate deterministic order
+    Queue->>DB: Read waiting visits
+    Queue-->>Client: Ordered queue
+    Client->>API: Call visit / complete triage
+    API->>DB: Save workflow change and audit event
+```
 
-Do not expose the production patient database to either a general-purpose agent client or a third-party MCP service. A FHIR MCP can be evaluated later against an in-country sandbox; it is not required for this prototype.
+Queue ordering is deterministic: fast-track visits first, then long waits, then the age-weighted wait score. It is an operational rule, not an automated clinical diagnosis.
 
-## Model and voice
+### Appointment request and approval
 
-Host one open-weight model and inference runtime inside the country. Verify that prompts, outputs, logs, telemetry, backups and support access also remain in-country. A frontier model can be compared only on synthetic records. Keep patient speech recognition and personalized speech generation local. ElevenLabs may produce generic non-personal phrases only, unless an in-country deployment and contractual data path are verified.
+```mermaid
+flowchart LR
+    Request[Appointment request] --> Match[Find future matching slots]
+    Match --> Proposal[Pending proposal with evidence]
+    Proposal --> Review[Shift lead/admin review]
+    Review -->|Reject| Rejected[Rejected + audited]
+    Review -->|Approve| Reserve[Transactionally reserve capacity]
+    Reserve --> Booked[Booked + audited]
+    Reserve -. optional .-> Mock[Mock clinic adapter]
+```
 
-## Logs and approval
+The proposal is not a booking. Only an authenticated shift lead or admin can approve or reject it. The optional local model can assist with bounded proposal work, but it cannot approve, reject, reserve capacity, or call an external clinic system.
 
-For each tool call record the timestamp, correlation ID, actor, tool name, minimized inputs, output, status and retry count. For every queue-affecting commit record the before/after values, decision reason, named clinician identifier and approval timestamp. Protect audit records from ordinary editing and define access/retention with the facility.
+### Flow operations
 
-## Recovery
+Flow endpoints read observations and operational data, then calculate metrics, bottlenecks, alerts, recommendations, and simulations. Model-assisted extraction, when enabled, returns a human-review-required result; it does not assign a diagnosis or clinical priority.
 
-Bound retries to idempotent reads and transient failures. Never repeat a commit without the same idempotency key. Validate all tool responses. If slots are stale, the model is uncertain, approval expires, or recovery limits are reached, do not commit; show a clear staff handoff. The demo should show at least one such recovery path.
+## Boundaries and non-goals
+
+- Authentication and role checks are enforced by FastAPI; the frontend is not a security boundary.
+- Audit events are written by backend workflows alongside sensitive changes.
+- The MCP server is a local stdio process, not an authenticated public API.
+- The clinic/FHIR adapter is a mock prototype. No live HMIS or FHIR integration is implemented.
+- LangGraph orchestration, Next.js, Prisma, and a separate production MCP database server are not part of the current implementation.
+- Use synthetic data only. This prototype is not approved for live clinical care.

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../auth/AuthContext';
 import { extractObservation } from '../api';
 
-export function Extract() {
+export default function Extract() {
   const { token } = useAuth();
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);

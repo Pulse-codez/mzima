@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../router';
 import React from 'react';
 import credits from '../data/photo-credits.json';
 import { ImageWithFallback } from '../components/ui/ImageWithFallback';
@@ -14,7 +14,7 @@ const steps = [
   { n: '6', title: 'Audit', text: 'Every step is logged as an audit event.' },
 ];
 
-export function HowItWorks() {
+export default function HowItWorks() {
   const navigate = useNavigate();
   return (
     <main id="main">

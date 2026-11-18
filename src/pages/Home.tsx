@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../router';
 import React from 'react';
 import { Hero } from '../sections/Hero';
 import { ProblemStrip } from '../sections/ProblemStrip';
@@ -9,7 +9,7 @@ import { ComparisonTable } from '../sections/ComparisonTable';
 import { Faq } from '../sections/Faq';
 import { ClosingCta } from '../sections/ClosingCta';
 
-export function Home() {
+export default function Home() {
   const navigate = useNavigate();
   return (
     <main id="main">

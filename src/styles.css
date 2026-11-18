@@ -1,8 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
 @import './tokens.css';
+@import './app/originkit-section-themes.css';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-egyptian: #1034A6;
+  --color-egyptian-deep: #0B2478;
+  --color-stone: #7D9BB8;
+  --color-stone-light: #A9BCD0;
+  --color-scarlet: #FF2400;
+  --font-heading: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+}
+
+@source "../src/components/originkit";
 
 * { box-sizing: border-box; }
 .site-shell { min-height: 100vh; background: var(--peach-50); color: var(--ink); font-family: var(--font-body); }
@@ -290,3 +301,22 @@
 @media (max-width: 360px) {
   .sc-main { padding: 12px; }
 }
+
+/* ===== Mzima theme: Egyptian blue, stone blue, scarlet for focus ===== */
+html, body { background: #1034A6; color: #FFFFFF; }
+*:focus-visible { outline: 3px solid #FFFFFF; outline-offset: 3px; }
+
+.spotlight-nav-bg { background: rgba(11, 36, 120, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.glass-border { border: 1px solid rgba(125, 155, 184, 0.45); }
+.spotlight-nav-shadow { box-shadow: 0 10px 30px rgba(5, 15, 50, 0.35); }
+
+@media (hover: hover) and (pointer: fine) {
+  .lift-hover { transition: transform 0.3s ease-out, box-shadow 0.3s ease-out; }
+  .lift-hover:hover { transform: translateY(-4px); }
+}
+.auth-legacy .sub, .auth-legacy .field label { color: rgba(255, 255, 255, 0.88) !important; }
+.auth-legacy .err { color: #FFFFFF !important; font-weight: 600; }
+.auth-legacy .btn-primary { background: #FF2400; color: #FFFFFF; }
+.auth-legacy .btn-primary:hover:not(:disabled) { background: #E21F00; }
+.auth-legacy .btn-outline { color: #FFFFFF; border-color: #7D9BB8; }
+.auth-legacy .btn-outline:hover:not(:disabled) { background: rgba(125, 155, 184, 0.15); }

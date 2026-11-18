@@ -122,9 +122,9 @@ During verification with `uv run python -m pytest -v`, three intermediate failur
 2. **Duplicate Request Guard vs. Capacity Contention (`409 == 201`):**
    * *Symptom:* `test_stale_slot_proposal_cannot_overbook_capacity` failed because submitting a second request for the same patient/specialty returned `409` instead of `201`.
    * *Fix:* Removed the submission-time duplicate `409` check so competing `PENDING_REVIEW` requests are evaluated at clinician commit time against live slot capacity.
-3. **SQLite Thread Contention & Status Message Matching:**
-   * *Symptom:* `test_scenario_d_concurrent_clinician_decisions_prevent_duplicate_booking` raised `sqlite3.InterfaceError` when two threads shared a single `StaticPool` connection, and `test_approval_token_rejects_unauthorized_role_and_replay` expected `'already been decided'` in the `ApprovalError` message.
-   * *Fix:* Switched `phase3_env` in `tests/integration/test_phase3_appointments.py` to a `tmp_path` file-backed SQLite database (allowing separate per-thread connections) and aligned the `ApprovalError` text in `workflow.py`.
+3. **PostgreSQL concurrency & status message matching:**
+   * *Symptom:* `test_scenario_d_concurrent_clinician_decisions_prevent_duplicate_booking` required independent database connections for concurrent decisions, and `test_approval_token_rejects_unauthorized_role_and_replay` expected `'already been decided'` in the `ApprovalError` message.
+   * *Fix:* The phase-3 fixture now uses the isolated PostgreSQL database supplied through `TEST_DATABASE_URL`, and the `ApprovalError` text is aligned with the test contract.
 
 ---
 

@@ -1,8 +1,8 @@
 from datetime import datetime
+import os
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
 
 from backend.adapters.clinic.mock_fhir import MockClinicFHIRAdapter
 from backend.db.session import Base
@@ -12,10 +12,12 @@ import backend.models
 
 
 def run_tests():
+    database_url = os.environ.get("TEST_DATABASE_URL")
+    if not database_url:
+        raise RuntimeError("TEST_DATABASE_URL must point to an isolated PostgreSQL database")
     engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
+        database_url,
+        pool_pre_ping=True,
     )
     Base.metadata.create_all(bind=engine)
     testing_session = sessionmaker(autocommit=False, autoflush=False, bind=engine)

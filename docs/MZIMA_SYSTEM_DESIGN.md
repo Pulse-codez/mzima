@@ -1,5 +1,7 @@
 # Mzima | Appointment and Routing Co-pilot
 
+**Status:** product concept and safety requirements. This document describes the intended future agent-assisted workflow; it is not a map of the current implementation. For the implemented system, see [ARCHITECTURE.md](ARCHITECTURE.md) and [TECH_STACK.md](TECH_STACK.md).
+
 **Concept draft · Kenya · Prototype scope: one outpatient facility and one booking workflow**
 
 > Mzima is not a diagnostic system. It gathers patient-reported reasons for a visit, identifies possible safety concerns for clinician review, and proposes an appointment sector. A named clinician must approve any priority, referral, deterioration flag, or change to queue position. No agent action silently changes care.

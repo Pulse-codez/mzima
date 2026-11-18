@@ -1,8 +1,10 @@
 import React, { useCallback, useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
+import { authInput } from './styles';
 
 interface PasswordFieldProps {
   id: string;
-  label: string;
+  label?: string;
   value: string;
   onChange: (value: string) => void;
   onBlur?: () => void;
@@ -13,6 +15,7 @@ interface PasswordFieldProps {
   disabled?: boolean;
   inputRef?: React.Ref<HTMLInputElement>;
   capsLockHint?: boolean;
+  placeholder?: string;
 }
 
 export function PasswordField({
@@ -27,22 +30,28 @@ export function PasswordField({
   disabled,
   inputRef,
   capsLockHint = true,
+  placeholder = 'Enter your password',
 }: PasswordFieldProps) {
   const [show, setShow] = useState(false);
   const [capsOn, setCapsOn] = useState(false);
 
-  const handleKey = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (capsLockHint) {
-      setCapsOn(e.getModifierState ? e.getModifierState('CapsLock') : false);
-    }
-  }, [capsLockHint]);
-
-  const toggle = useCallback(() => setShow((s) => !s), []);
+  const handleKey = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (capsLockHint) {
+        setCapsOn(e.getModifierState ? e.getModifierState('CapsLock') : false);
+      }
+    },
+    [capsLockHint],
+  );
 
   return (
-    <div className="field">
-      <label htmlFor={id}>{label}</label>
-      <div className="password-row">
+    <div>
+      {label && (
+        <label htmlFor={id} className="mb-2 block text-sm font-semibold text-white">
+          {label}
+        </label>
+      )}
+      <div className="relative">
         <input
           id={id}
           ref={inputRef}
@@ -56,25 +65,30 @@ export function PasswordField({
           aria-invalid={touched && !!error ? true : undefined}
           aria-describedby={describedBy}
           disabled={disabled}
-          style={{ flex: 1 }}
+          placeholder={placeholder}
+          className={`${authInput} pr-12`}
         />
         <button
           type="button"
-          className="toggle"
-          onClick={toggle}
+          onClick={() => setShow((s) => !s)}
           aria-pressed={show}
           aria-label={show ? 'Hide password' : 'Show password'}
           disabled={disabled}
+          className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-stone-light hover:bg-white/10 hover:text-white disabled:opacity-50"
         >
-          {show ? 'Hide' : 'Show'}
+          {show ? <EyeOff className="h-5 w-5" aria-hidden="true" /> : <Eye className="h-5 w-5" aria-hidden="true" />}
         </button>
       </div>
       {capsLockHint && capsOn && !disabled && (
-        <small style={{ color: 'var(--emerald-800)', fontSize: 13 }} role="status">
-          Caps Lock is on.
-        </small>
+        <p className="mt-2 text-sm font-semibold text-white" role="status">
+          Caps Lock is on
+        </p>
       )}
-      {touched && error && <span className="err" id={`${id}-error`}>{error}</span>}
+      {touched && error && (
+        <p className="mt-2 text-sm font-semibold text-white" id={`${id}-error`}>
+          {error}
+        </p>
+      )}
     </div>
   );
 }

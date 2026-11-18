@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../auth/AuthContext';
 
-export function Review() {
+export default function Review() {
   const { user, logout } = useAuth();
   return (
     <main id="main" className="section">

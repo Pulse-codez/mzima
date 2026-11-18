@@ -1,11 +1,11 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../router';
 import React from 'react';
 import credits from '../data/photo-credits.json';
 import { ImageWithFallback } from '../components/ui/ImageWithFallback';
 
 const story = credits.find((c) => c.key === 'story')!;
 
-export function Story() {
+export default function Story() {
   const navigate = useNavigate();
   return (
     <main id="main">

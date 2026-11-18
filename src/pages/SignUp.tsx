@@ -1,19 +1,21 @@
-import { useNavigate } from 'react-router-dom';
-import React, { useState, useMemo, useEffect } from 'react';
-import credits from '../data/photo-credits.json';
-import { ImageWithFallback } from '../components/ui/ImageWithFallback';
-
-const side = credits.find((c) => c.key === 'signup')!;
+import React, { useMemo, useState } from 'react';
+import { useNavigate } from '../router';
+import { AuthLayout } from '../components/auth/AuthLayout';
+import { Button } from '../components/ui/Button';
+import { authInput, authLabel } from '../components/auth/styles';
+import { CheckCircle2 } from 'lucide-react';
 
 type Role = 'clerk' | 'nurse' | 'lead';
 
 const roleInfo: Record<Role, { title: string; desc: string; can: string }> = {
-  clerk: { title: 'Clerk (front desk)', desc: 'Front desk and registration.', can: 'Register walk-ins, capture visit details, view queue order.' },
-  nurse: { title: 'Nurse', desc: 'Triage and care coordination.', can: 'Complete triage using fixed categories, flag concerns.' },
-  lead: { title: 'Shift Lead', desc: 'Review and sign off.', can: 'Approve or reject proposed appointments; every decision logged.' },
+  clerk: { title: 'Front desk', desc: 'Registration and queue.', can: 'Register arrivals and view queue order.' },
+  nurse: { title: 'Nurse', desc: 'Triage and care coordination.', can: 'Complete triage using fixed categories.' },
+  lead: { title: 'Shift lead', desc: 'Review and sign off.', can: 'Approve or reject proposals; every decision is logged.' },
 };
 
-export function SignUp() {
+const fieldError = 'mt-2 text-sm font-semibold text-white';
+
+export default function SignUp() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [role, setRole] = useState<Role | null>(null);
@@ -52,6 +54,7 @@ export function SignUp() {
   function validatePassword(v: string) { return v.length >= 8 ? '' : 'Password must be at least 8 characters.'; }
 
   function blurValidate(field: string, value: string) {
+    setTouched((t) => ({ ...t, [field]: true }));
     let msg = '';
     if (field === 'name') msg = validateName(value);
     if (field === 'email') msg = validateEmail(value);
@@ -61,18 +64,12 @@ export function SignUp() {
   }
 
   function canAdvanceStep2() {
-    return (
-      !validateName(name) &&
-      !validateEmail(email) &&
-      !validateClinic(clinic) &&
-      !validatePassword(password)
-    );
+    return !validateName(name) && !validateEmail(email) && !validateClinic(clinic) && !validatePassword(password);
   }
 
   // TODO(back-end): wire submitAccessRequest to the access-request API.
   async function submitAccessRequest(payload: { role: Role; name: string; email: string; clinic: string; password: string; ticketId: string }) {
     void payload;
-    // Simulate a short review queue handoff.
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
@@ -91,174 +88,159 @@ export function SignUp() {
     }
   }
 
-  const stepAnnouncement =
-    step === 1 ? 'Step 1 of 3: choose your role' :
-    step === 2 ? 'Step 2 of 3: your details' :
-    'Step 3 of 3: review and confirm';
-
-  // keep a visible focus ring target for step changes (no-op except announce)
-  useEffect(() => { }, [step]);
-
   if (success) {
     return (
-      <div className="su-wrap">
-        <aside className="su-side" aria-hidden="true">
-          <ImageWithFallback src={side.src} alt="Red vehicle captured in a city timelapse" width={1200} height={800} credit={{ name: side.photographer, url: side.photoPage }} />
-        </aside>
-        <section className="su-main">
-          <div className="success-box">
-            <div aria-hidden="true" style={{ fontSize: 42 }}>✓</div>
-            <h2>Request received.</h2>
-            <p className="sub" style={{ margin: '0 auto' }}>A shift lead will review it.</p>
-            <p style={{ marginTop: 12, color: 'var(--muted)' }}>Ticket {ticketId}</p>
-            <button className="btn btn-primary" style={{ marginTop: 20 }} onClick={() => navigate('/')}>Back to home</button>
+      <AuthLayout variant="signup">
+        <div className="py-12 text-center" role="status" aria-live="polite">
+          <CheckCircle2 className="mx-auto h-14 w-14 text-stone-light" aria-hidden="true" />
+          <h1 className="mt-6 font-heading text-3xl font-extrabold text-white">Request received</h1>
+          <p className="mt-3 text-white/85">A shift lead will review it. Ticket {ticketId}.</p>
+          <div className="mt-8">
+            <Button variant="solid" size="lg" onClick={() => navigate('/')}>
+              Back to home
+            </Button>
           </div>
-        </section>
-      </div>
+        </div>
+      </AuthLayout>
     );
   }
 
-  return (
-    <div className="su-wrap">
-      <aside className="su-side">
-        <h2>Access is reviewed by a shift lead before anything is enabled.</h2>
-        <p>This is a synthetic-data prototype. Do not enter real patient information.</p>
-        <div style={{ marginTop: 'auto', paddingTop: 28 }}>
-          <ImageWithFallback src={side.src} alt="Red vehicle captured in a city timelapse" width={1200} height={800} credit={{ name: side.photographer, url: side.photoPage }} />
-        </div>
-      </aside>
-      <section className="su-main">
-        <div className="su-progress" aria-hidden="true">
-          {[1, 2, 3].map((i) => (
-            <span key={i} className={step >= i ? 'done' : ''} />
-          ))}
-        </div>
-        <div aria-live="polite" aria-atomic="true" style={{ position: 'absolute', left: -9999, width: 1, height: 1, overflow: 'hidden' }}>
-          {stepAnnouncement}
-        </div>
+  const stepLabel = step === 1 ? 'Step 1 of 3' : step === 2 ? 'Step 2 of 3' : 'Step 3 of 3';
 
-        {step === 1 && (
-          <>
-            <h1 className="display display-lg" style={{ color: 'var(--emerald-800)', marginBottom: 8 }}>Your role</h1>
-            <p className="sub" style={{ marginBottom: 24 }}>Choose the part you play. Patient access is not offered here.</p>
-            <div className="su-card-grid">
-              {(Object.keys(roleInfo) as Role[]).map((r) => (
-                <button
-                  type="button"
-                  key={r}
-                  className={'role-card-big' + (role === r ? ' selected' : '')}
-                  onClick={() => { setRole(r); setRoleError(''); }}
-                  aria-pressed={role === r}
-                >
-                  <h3>{roleInfo[r].title}</h3>
-                  <p>{roleInfo[r].desc}</p>
-                  <p style={{ marginTop: 8, fontSize: 13 }}><strong>Can do:</strong> {roleInfo[r].can}</p>
-                </button>
+  return (
+    <AuthLayout variant="signup">
+      <div className="mb-8 flex gap-2" aria-hidden="true">
+        {[1, 2, 3].map((i) => (
+          <span key={i} className={`h-1.5 flex-1 rounded-full ${step >= i ? 'bg-stone-light' : 'bg-stone/30'}`} />
+        ))}
+      </div>
+      <p className="sr-only" aria-live="polite">{stepLabel}</p>
+
+      {step === 1 && (
+        <>
+          <h1 className="font-heading text-3xl font-extrabold text-white">Choose your role</h1>
+          <p className="mt-2 text-white/85">Pick the part you play. Patient access is not offered here.</p>
+          <div className="mt-6 grid gap-3">
+            {(Object.keys(roleInfo) as Role[]).map((r) => (
+              <button
+                type="button"
+                key={r}
+                aria-pressed={role === r}
+                onClick={() => { setRole(r); setRoleError(''); }}
+                className={`lift-hover rounded-2xl border-2 p-5 text-left transition-colors ${
+                  role === r ? 'border-white bg-stone/25' : 'border-stone/40 bg-egyptian-deep hover:border-stone'
+                }`}
+              >
+                <span className="font-heading text-lg font-bold text-white">{roleInfo[r].title}</span>
+                <span className="mt-1 block text-sm text-white/80">{roleInfo[r].desc}</span>
+                <span className="mt-2 block text-sm text-white/80"><strong className="text-white">Can do:</strong> {roleInfo[r].can}</span>
+              </button>
+            ))}
+          </div>
+          {roleError && <p className={fieldError} role="alert">{roleError}</p>}
+          <div className="mt-8">
+            <Button
+              variant="scarlet"
+              size="lg"
+              onClick={() => {
+                if (!role) { setRoleError('Choose a role to continue.'); return; }
+                setStep(2);
+              }}
+            >
+              Continue
+            </Button>
+          </div>
+        </>
+      )}
+
+      {step === 2 && (
+        <form onSubmit={(e) => { e.preventDefault(); if (canAdvanceStep2()) setStep(3); }} className="space-y-5" noValidate>
+          <h1 className="font-heading text-3xl font-extrabold text-white">Your details</h1>
+          <div>
+            <label htmlFor="su-name" className={authLabel}>Name</label>
+            <input id="su-name" className={authInput} value={name} onChange={(e) => setName(e.target.value)} onBlur={() => blurValidate('name', name)} />
+            {touched.name && errors.name && <p className={fieldError}>{errors.name}</p>}
+          </div>
+          <div>
+            <label htmlFor="su-email" className={authLabel}>Work email</label>
+            <input id="su-email" type="email" className={authInput} value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => blurValidate('email', email)} />
+            {touched.email && errors.email && <p className={fieldError}>{errors.email}</p>}
+          </div>
+          <div>
+            <label htmlFor="su-clinic" className={authLabel}>Clinic or site name</label>
+            <input id="su-clinic" className={authInput} value={clinic} onChange={(e) => setClinic(e.target.value)} onBlur={() => blurValidate('clinic', clinic)} />
+            {touched.clinic && errors.clinic && <p className={fieldError}>{errors.clinic}</p>}
+          </div>
+          <div>
+            <label htmlFor="su-password" className={authLabel}>Password</label>
+            <div className="relative">
+              <input
+                id="su-password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                className={`${authInput} pr-20`}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onBlur={() => blurValidate('password', password)}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                className="absolute right-2 top-1/2 min-h-[36px] -translate-y-1/2 rounded-lg px-3 text-sm font-semibold text-stone-light hover:bg-white/10 hover:text-white"
+              >
+                {showPassword ? 'Hide' : 'Show'}
+              </button>
+            </div>
+            {touched.password && errors.password && <p className={fieldError}>{errors.password}</p>}
+            <div className="mt-3 flex gap-1.5" aria-hidden="true">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <span key={i} className={`h-1.5 flex-1 rounded-full ${strength >= i ? 'bg-stone-light' : 'bg-stone/30'}`} />
               ))}
             </div>
-            {roleError && <p className="err" role="alert" style={{ marginTop: 12, color: '#B00020' }}>{roleError}</p>}
-            {role && (
-              <p style={{ marginTop: 16, color: 'var(--emerald-800)', fontWeight: 600 }}>
-                Selected: {roleInfo[role].title}. {roleInfo[role].desc}
-              </p>
-            )}
-            <div style={{ marginTop: 24 }}>
-              <button
-                className="btn btn-primary"
-                onClick={() => {
-                  if (!role) { setRoleError('Choose a role to continue.'); return; }
-                  setStep(2);
-                }}
-              >
-                Continue
-              </button>
-            </div>
-          </>
-        )}
+            <p className="mt-2 text-sm text-white/80">Strength: {strength <= 1 ? 'Weak' : strength <= 3 ? 'Fair' : 'Strong'}</p>
+          </div>
+          <div className="flex flex-wrap gap-3 pt-2">
+            <Button variant="outline" size="lg" onClick={() => setStep(1)}>Back</Button>
+            <Button type="submit" variant="scarlet" size="lg" disabled={!canAdvanceStep2()}>Continue</Button>
+          </div>
+        </form>
+      )}
 
-        {step === 2 && (
-          <form
-            onSubmit={(e) => { e.preventDefault(); if (canAdvanceStep2()) setStep(3); }}
-            style={{ display: 'grid', gap: 16, maxWidth: 520 }}
-          >
-            <h1 className="display display-lg" style={{ color: 'var(--emerald-800)', marginBottom: 8 }}>Your details</h1>
-            <div className="field">
-              <label htmlFor="su-name">Name</label>
-              <input id="su-name" value={name} onChange={(e) => setName(e.target.value)} onBlur={() => { setTouched((t) => ({ ...t, name: true })); blurValidate('name', name); }} />
-              {touched.name && errors.name && <span className="err">{errors.name}</span>}
-              {touched.name && !errors.name && validateName(name) === '' && <span style={{ color: 'var(--emerald-700)', fontSize: 13 }}>Looks good.</span>}
-            </div>
-            <div className="field">
-              <label htmlFor="su-email">Work email</label>
-              <input id="su-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => { setTouched((t) => ({ ...t, email: true })); blurValidate('email', email); }} />
-              {touched.email && errors.email && <span className="err">{errors.email}</span>}
-            </div>
-            <div className="field">
-              <label htmlFor="su-clinic">Clinic or site name</label>
-              <input id="su-clinic" value={clinic} onChange={(e) => setClinic(e.target.value)} onBlur={() => { setTouched((t) => ({ ...t, clinic: true })); blurValidate('clinic', clinic); }} />
-              {touched.clinic && errors.clinic && <span className="err">{errors.clinic}</span>}
-            </div>
-            <div className="field">
-              <label htmlFor="su-password">Password</label>
-              <div className="password-row">
-                <input
-                  id="su-password"
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onBlur={() => { setTouched((t) => ({ ...t, password: true })); blurValidate('password', password); }}
-                  style={{ flex: 1 }}
-                />
-                <button type="button" className="toggle" onClick={() => setShowPassword((s) => !s)}>
-                  {showPassword ? 'Hide' : 'Show'}
-                </button>
+      {step === 3 && (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <h1 className="font-heading text-3xl font-extrabold text-white">Review and confirm</h1>
+          <dl className="divide-y divide-stone/30 rounded-2xl border border-stone/40 bg-egyptian-deep p-6">
+            {[
+              ['Ticket', ticketId],
+              ['Role', role ? roleInfo[role].title : ''],
+              ['Name', name],
+              ['Email', email],
+              ['Site', clinic],
+              ['Status', 'Awaiting review'],
+            ].map(([k, v]) => (
+              <div key={k} className="flex justify-between gap-4 py-3">
+                <dt className="text-sm text-stone-light">{k}</dt>
+                <dd className="text-right text-sm font-semibold text-white">{v}</dd>
               </div>
-              {touched.password && errors.password && <span className="err">{errors.password}</span>}
-              <div className="strength" aria-hidden="true">
-                {[1,2,3,4,5].map((i) => (
-                  <span key={i} className={strength >= i ? 'on' : ''} />
-                ))}
-              </div>
-              <small style={{ color: 'var(--muted)' }}>Strength: {strength <= 1 ? 'Weak' : strength <= 3 ? 'Fair' : 'Strong'}</small>
-            </div>
-            <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-              <button type="button" className="btn btn-outline" onClick={() => setStep(1)}>Back</button>
-              <button type="submit" className="btn btn-primary" disabled={!canAdvanceStep2()}>Continue</button>
-            </div>
-          </form>
-        )}
-
-        {step === 3 && (
-          <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 16, maxWidth: 520 }}>
-            <h1 className="display display-lg" style={{ color: 'var(--emerald-800)', marginBottom: 8 }}>Review and confirm</h1>
-            <div className="ticket">
-              <div className="ticket-id">{ticketId}</div>
-              <dl style={{ margin: 0 }}>
-                <div className="ticket-row"><dt>Role</dt><dd>{role ? roleInfo[role].title : ''}</dd></div>
-                <div className="ticket-row"><dt>Name</dt><dd>{name}</dd></div>
-                <div className="ticket-row"><dt>Email</dt><dd>{email}</dd></div>
-                <div className="ticket-row"><dt>Clinic</dt><dd>{clinic}</dd></div>
-                <div className="ticket-row"><dt>Status</dt><dd>Awaiting review</dd></div>
-              </dl>
-            </div>
-            <label className="checkline">
-              <input type="checkbox" checked={consent1} onChange={(e) => setConsent1(e.target.checked)} />
-              <span>I understand this is a synthetic-data prototype and I will not enter real patient information.</span>
-            </label>
-            <label className="checkline">
-              <input type="checkbox" checked={consent2} onChange={(e) => setConsent2(e.target.checked)} />
-              <span>I understand access is reviewed by a shift lead.</span>
-            </label>
-            {formError && <p role="alert" style={{ color: '#B00020' }}>{formError}</p>}
-            <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-              <button type="button" className="btn btn-outline" onClick={() => setStep(2)}>Back</button>
-              <button type="submit" className="btn btn-primary" disabled={!consent1 || !consent2 || submitting}>
-                {submitting ? 'Submitting…' : 'Submit request'}
-              </button>
-            </div>
-          </form>
-        )}
-      </section>
-    </div>
+            ))}
+          </dl>
+          <label className="flex gap-3 text-sm text-white/90">
+            <input type="checkbox" className="mt-1 h-4 w-4 accent-white" checked={consent1} onChange={(e) => setConsent1(e.target.checked)} />
+            I understand this is a synthetic-data prototype and I will not enter real patient information.
+          </label>
+          <label className="flex gap-3 text-sm text-white/90">
+            <input type="checkbox" className="mt-1 h-4 w-4 accent-white" checked={consent2} onChange={(e) => setConsent2(e.target.checked)} />
+            I understand access is reviewed by a shift lead.
+          </label>
+          {formError && <p className={fieldError} role="alert">{formError}</p>}
+          <div className="flex flex-wrap gap-3">
+            <Button variant="outline" size="lg" onClick={() => setStep(2)}>Back</Button>
+            <Button type="submit" variant="scarlet" size="lg" disabled={!consent1 || !consent2 || submitting}>
+              {submitting ? 'Submitting…' : 'Submit request'}
+            </Button>
+          </div>
+        </form>
+      )}
+    </AuthLayout>
   );
 }

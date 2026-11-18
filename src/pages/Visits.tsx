@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../auth/AuthContext';
 
-export function Visits() {
+export default function Visits() {
   const { user, logout } = useAuth();
   return (
     <main id="main" className="section">
