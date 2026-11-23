@@ -27,10 +27,8 @@
   --breakpoint-ultrawide: 2560px;
 }
 
-/* originkit:hero-19 */
-/* src/components/originkit/hero-19.css */
+/* originkit:hero-31 */
+/* src/components/originkit/hero-31.css */
 @theme {
-  --font-instrument-serif: "Instrument Serif", Georgia, serif;
-  --font-tight: "Inter Tight", Inter, ui-sans-serif, sans-serif;
-  --animate-logo-marquee: logo-marquee 28s linear infinite;
+  --font-helvetica: "Helvetica", Arial, ui-sans-serif, sans-serif;
 }

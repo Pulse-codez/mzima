@@ -1,8 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter+Tight:wght@400;500;600&display=swap');
 @import './tokens.css';
-@import './app/originkit-section-themes.css';
 
 @import "tailwindcss";
+@import './app/originkit-section-theme.css';
+
+@source "../src/components/originkit";
 
 @theme {
   --color-egyptian: #1034A6;
@@ -12,8 +14,6 @@
   --color-scarlet: #FF2400;
   --font-heading: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
 }
-
-@source "../src/components/originkit";
 
 * { box-sizing: border-box; }
 .site-shell { min-height: 100vh; background: var(--peach-50); color: var(--ink); font-family: var(--font-body); }
