@@ -2,7 +2,6 @@
 // Delivered by Originkit · stack: nextjs · styling: tailwind
 "use client";
 
-import { InfoBand } from "@/components/originkit/ui/hero-31/info-band";
 import { Navbar } from "@/components/originkit/ui/hero-31/navbar";
 import { STAGE } from "@/components/originkit/ui/hero-31/stage";
 import { WaveField } from "@/components/originkit/ui/hero-31/wave-field";
@@ -101,7 +100,20 @@ export const SectionHero = () => (
       </h1>
     </div>
 
-    <InfoBand />
+    <div className={`${STAGE} z-10 grid gap-[24px] border-y border-white/40 px-[20px] py-[20px] text-white ipad:grid-cols-2 ipad:px-[56px] desktop-sm:gap-[48px]`}>
+      <div>
+        <p className="font-tight text-[14px] font-medium text-white/70">What this is</p>
+        <p className="mt-[8px] max-w-[52ch] font-helvetica text-[16px] leading-[1.4] ipad:text-[18px]">
+          Mzima connects outpatient queues, appointment slots, and clinic scheduling. A named clinician approves every booking.
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-[16px]">
+        <p className="font-tight text-[14px] font-medium text-white/70">Synthetic data only · Prototype, not for live care</p>
+        <a href="/login" className="inline-flex min-h-11 items-center justify-center bg-[#29AB87] px-[20px] font-tight text-[16px] font-medium text-[#081510] transition-colors duration-200 hover:bg-[#3DDC97] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
+          Open prototype
+        </a>
+      </div>
+    </div>
 
     {/* Figma leaves the band clear of the frame's bottom edge — the rails carry
         on past it, so the gap is part of the design rather than slack. */}

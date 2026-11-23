@@ -21,6 +21,29 @@
   text-decoration: none;
 }
 
+.mzima-landing > main nav a {
+  color: #0e2419;
+}
+
+.mzima-landing > main nav > div {
+  padding-right: clamp(16px, 4vw, 56px);
+  padding-left: clamp(16px, 4vw, 56px);
+}
+
+.mzima-landing > main > div:nth-child(5) {
+  padding-right: clamp(20px, 4vw, 56px);
+  padding-left: clamp(20px, 4vw, 56px);
+}
+
+.mzima-landing > main > div:nth-child(5) h1 {
+  margin-bottom: 56px;
+}
+
+.mzima-landing > main > div:nth-child(6) {
+  padding-right: clamp(20px, 4vw, 56px);
+  padding-left: clamp(20px, 4vw, 56px);
+}
+
 .landing-skip {
   position: absolute;
   left: 16px;
@@ -161,7 +184,17 @@
 }
 
 .idea {
-  background: var(--forest-900);
+  --ink: #122a23;
+  --muted: #52665e;
+  --line: rgba(18, 42, 35, 0.18);
+  --jungle: #17765e;
+  --jungle-hot: #0d604b;
+  position: relative;
+  overflow: hidden;
+  background-color: #e8f0ea;
+  background-image: linear-gradient(rgba(18, 42, 35, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(18, 42, 35, 0.035) 1px, transparent 1px);
+  background-size: 34px 34px;
+  color: var(--ink);
 }
 
 .idea-statement {
@@ -177,6 +210,195 @@
 .idea-statement em {
   color: var(--jungle);
   font-style: normal;
+}
+
+.care-showcase {
+  display: grid;
+  grid-template-columns: 1.12fr 0.88fr;
+  gap: 18px;
+  align-items: stretch;
+  margin-top: 48px;
+}
+
+.clinic-photo {
+  position: relative;
+  min-height: 360px;
+  margin: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #b6c8c0;
+}
+
+.clinic-photo::after {
+  position: absolute;
+  inset: 45% 0 0;
+  background: linear-gradient(transparent, rgba(7, 23, 18, 0.72));
+  content: '';
+  pointer-events: none;
+}
+
+.clinic-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  object-fit: cover;
+  transition: transform 700ms cubic-bezier(0.2, 0.75, 0.25, 1);
+}
+
+.clinic-photo:hover img {
+  transform: scale(1.035);
+}
+
+.clinic-photo figcaption {
+  position: absolute;
+  z-index: 1;
+  right: 20px;
+  bottom: 18px;
+  left: 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #fff;
+  font-size: 13px;
+}
+
+.clinic-photo figcaption a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.queue-board {
+  display: flex;
+  min-height: 360px;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: 26px;
+  border-radius: 8px;
+  background-color: #12362d;
+  background-image: radial-gradient(rgba(222, 243, 231, 0.14) 0.7px, transparent 0.7px);
+  background-position: right 18px top 18px;
+  background-size: 12px 12px;
+  color: #eff8f2;
+}
+
+.queue-board-head,
+.queue-row,
+.queue-board-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.queue-eyebrow {
+  margin: 0 0 8px;
+  color: #8bd1b5;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.queue-board-head h3 {
+  margin: 0;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 29px;
+  font-weight: 560;
+}
+
+.queue-total {
+  color: #bdd2c7;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.queue-total b {
+  display: block;
+  color: #fff;
+  font-family: Fraunces, Georgia, serif;
+  font-size: 35px;
+  font-weight: 500;
+  line-height: 1.1;
+  text-align: right;
+}
+
+.queue-rows {
+  margin-top: 34px;
+  border-top: 1px solid rgba(239, 248, 242, 0.18);
+}
+
+.queue-row {
+  min-height: 66px;
+  border-bottom: 1px solid rgba(239, 248, 242, 0.14);
+}
+
+.queue-token {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  border: 1px solid rgba(239, 248, 242, 0.26);
+  border-radius: 50%;
+  color: #c3e3d4;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.queue-copy {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.queue-copy small,
+.queue-time {
+  color: #a9c2b5;
+  font-size: 11px;
+}
+
+.queue-row-current .queue-token {
+  border-color: #77d7af;
+  background: rgba(119, 215, 175, 0.16);
+  color: #a4f0cb;
+}
+
+.queue-pulse,
+.queue-board-foot span {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: #72d9aa;
+}
+
+.queue-pulse {
+  animation: queue-pulse 1.8s ease-in-out infinite;
+}
+
+.queue-board-foot {
+  justify-content: flex-start;
+  margin: 20px 0 0;
+  color: #c2d8cd;
+  font-size: 12px;
+}
+
+.landing-reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 650ms ease, transform 650ms cubic-bezier(0.2, 0.7, 0.25, 1);
+}
+
+.landing-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes queue-pulse {
+  50% { box-shadow: 0 0 0 6px rgba(114, 217, 170, 0.12); }
 }
 
 .stat-grid,
@@ -252,7 +474,6 @@
 }
 
 .glass-card p,
-.plain-list p,
 .step-card p,
 .safety-copy,
 .faq-panel p,
@@ -262,23 +483,11 @@
   line-height: 1.6;
 }
 
-.plain-list {
-  margin-top: 28px;
-  border-top: 1px solid var(--line);
-}
-
-.plain-list article {
-  display: grid;
-  grid-template-columns: 180px 1fr;
-  gap: 24px;
-  padding: 22px 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.plain-list h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 700;
+.glass-card .glass-detail {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(231, 242, 234, 0.16);
+  font-size: 14px;
 }
 
 .step-grid {
@@ -428,9 +637,14 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .glass-card {
+  .glass-card,
+  .clinic-photo img,
+  .landing-reveal {
     transition: none;
   }
+
+  .queue-pulse { animation: none; }
+  .landing-reveal { opacity: 1; transform: none; }
 }
 
 @media (max-width: 980px) {
@@ -441,14 +655,25 @@
     grid-template-columns: 1fr 1fr;
   }
 
-  .safety-layout,
-  .plain-list article {
+  .safety-layout {
     grid-template-columns: 1fr;
     gap: 8px;
   }
 }
 
 @media (max-width: 760px) {
+  .mzima-landing > main nav ul {
+    gap: 0 8px;
+  }
+
+  .mzima-landing > main nav ul a {
+    font-size: 12px;
+  }
+
+  .mzima-landing > main > div:nth-child(5) h1 {
+    margin-bottom: 120px;
+  }
+
   .landing-nav-links,
   .landing-nav .landing-signin {
     display: none;
@@ -497,5 +722,38 @@
 
   .landing-section {
     padding: 72px 0;
+  }
+
+  .care-showcase {
+    grid-template-columns: 1fr;
+    margin-top: 36px;
+  }
+
+  .clinic-photo,
+  .clinic-photo img,
+  .queue-board {
+    min-height: 310px;
+  }
+
+  .queue-board { padding: 22px; }
+}
+
+@media (max-width: 360px) {
+  .mzima-landing > main nav > div {
+    gap: 6px;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .mzima-landing > main nav > div > a {
+    font-size: 19px;
+  }
+
+  .mzima-landing > main nav ul {
+    gap: 0 4px;
+  }
+
+  .mzima-landing > main nav ul a {
+    font-size: 10px;
   }
 }

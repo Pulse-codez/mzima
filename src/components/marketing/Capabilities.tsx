@@ -46,8 +46,8 @@ export function Capabilities() {
           What the prototype actually does.
         </h2>
         <p className="landing-lead">
-          Hover a panel to clear the glass. Each capability starts from the same rule: automation may prepare
-          the work, and a clinician authorises anything that changes care operations.
+          Queue visibility, appointment proposals, and decision records share one workflow. A clinician
+          authorises anything that changes care operations.
         </p>
         <div className="glass-grid">
           {CAPABILITIES.map((item, index) => (
@@ -55,14 +55,7 @@ export function Capabilities() {
               <span className="glass-index">{String(index + 1).padStart(2, '0')}</span>
               <h3>{item.title}</h3>
               <p>{item.summary}</p>
-            </article>
-          ))}
-        </div>
-        <div className="plain-list">
-          {CAPABILITIES.map((item) => (
-            <article key={item.title}>
-              <h3>{item.title}</h3>
-              <p>{item.detail}</p>
+              <p className="glass-detail">{item.detail}</p>
             </article>
           ))}
         </div>

@@ -2,8 +2,6 @@
 // Delivered by Originkit · stack: nextjs · styling: tailwind
 "use client";
 
-import { useState } from "react";
-
 import { STAGE } from "@/components/originkit/ui/hero-31/stage";
 
 function asset(file: string) {
@@ -27,11 +25,10 @@ function asset(file: string) {
  */
 
 const NAV_LINKS = [
-  { label: "Workflow", href: "#workflow" },
+  { label: "Overview", href: "#workflow" },
   { label: "Capabilities", href: "#capabilities" },
   { label: "How it works", href: "#how" },
   { label: "Safety", href: "#safety" },
-  { label: "Questions", href: "#questions" },
 ] as const;
 
 /** Shared pressable / focus stack — the house Button contract on a light bar. */
@@ -42,15 +39,13 @@ const WORDMARK =
   "font-helvetica text-[22px] leading-[1.14] tracking-[-0.03em] text-[#0E2419]";
 
 export const Navbar = () => {
-  const [open, setOpen] = useState(false);
-
   return (
   <nav
     aria-label="Primary"
     className="relative z-30 h-[59px] w-full shrink-0 bg-white"
   >
     <div
-      className={`${STAGE} flex h-full items-center justify-between px-[16px] desktop-sm:hidden`}
+      className={`${STAGE} flex min-h-[59px] flex-wrap items-center justify-between gap-x-[18px] gap-y-[4px] px-[16px] py-[8px]`}
     >
       <a
         href="/"
@@ -59,34 +54,11 @@ export const Navbar = () => {
       >
         Mzima
       </a>
-      {/* The icon is 24px sitting 16px off the edge; the negative margin lets the
-          44px target grow around it without moving it. */}
-      <button
-        type="button"
-        aria-label={open ? "Close menu" : "Open menu"}
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-        className={`-mr-[10px] flex size-11 items-center justify-center ${CONTROL}`}
-      >
-        <img
-          src={asset("menu.svg")}
-          alt=""
-          aria-hidden
-          className="block size-6 max-w-none"
-        />
-      </button>
-    </div>
-
-    {open ? (
-      <div className="absolute inset-x-0 top-full z-30 border-b border-[#1B4332] bg-white px-[20px] py-[12px] desktop-sm:hidden">
-        <ul className="flex flex-col">
+      <div className="flex min-h-11 items-center gap-[16px]">
+        <ul className="flex flex-wrap items-center gap-x-[14px] gap-y-[2px] ipad:gap-x-[20px]">
           {NAV_LINKS.map((item) => (
             <li key={item.href}>
-              <a
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className={`flex min-h-11 items-center font-tight text-[16px] leading-[1.2] text-[#0E2419] ${CONTROL}`}
-              >
+              <a href={item.href} className={`flex min-h-11 items-center font-tight text-[13px] leading-[1.2] text-[#0E2419] ipad:text-[15px] ${CONTROL}`}>
                 {item.label}
               </a>
             </li>
@@ -94,45 +66,9 @@ export const Navbar = () => {
         </ul>
         <a
           href="/login"
-          className={`mt-[8px] flex min-h-11 items-center justify-center bg-[#29AB87] px-[20px] font-tight text-[16px] leading-[1.2] font-medium text-[#081510] ${CONTROL} [@media(hover:hover)_and_(pointer:fine)]:hover:bg-[#3DDC97] [@media(hover:hover)_and_(pointer:fine)]:hover:opacity-100`}
+          className={`hidden min-h-11 items-center bg-[#29AB87] px-[16px] font-tight text-[15px] font-medium text-[#081510] ${CONTROL} ipad:inline-flex [@media(hover:hover)_and_(pointer:fine)]:hover:bg-[#3DDC97] [@media(hover:hover)_and_(pointer:fine)]:hover:opacity-100`}
         >
-          Sign in
-        </a>
-      </div>
-    ) : null}
-
-    <div
-      className={`${STAGE} hidden h-full items-center justify-between desktop-sm:flex`}
-    >
-      <a
-        href="/"
-        aria-label="Mzima home"
-        className={`px-[48px] ${WORDMARK} ${CONTROL}`}
-      >
-        Mzima
-      </a>
-
-      <div className="flex h-full items-center gap-[24px]">
-        <ul className="flex items-center gap-[24px]">
-          {NAV_LINKS.map((item) => (
-            <li key={item.href}>
-              <a
-                href={item.href}
-                className={`flex min-h-11 items-center font-tight text-[16px] leading-[1.2] text-[#0E2419] ${CONTROL}`}
-              >
-                {item.label}
-              </a>
-            </li>
-          ))}
-        </ul>
-
-        {/* Full-bleed to the right edge and full nav height — the only element in
-            the design that touches a corner of the frame. */}
-        <a
-          href="/login"
-          className={`flex h-full items-center bg-[#29AB87] px-[20px] font-tight text-[16px] leading-[1.2] font-medium text-[#081510] ${CONTROL} [@media(hover:hover)_and_(pointer:fine)]:hover:bg-[#3DDC97] [@media(hover:hover)_and_(pointer:fine)]:hover:opacity-100`}
-        >
-          Sign in
+          Prototype
         </a>
       </div>
     </div>

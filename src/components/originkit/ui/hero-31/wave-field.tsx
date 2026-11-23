@@ -93,7 +93,7 @@ export const WaveField = () => {
           play={!reduceMotion && onScreen && tabVisible}
           bgColor="#29AB87"
           colors={["#0E2419"]}
-          cellSize={1}
+          cellSize={cellSize}
           frequency={1}
           gamma={6}
           paletteBias={10}
