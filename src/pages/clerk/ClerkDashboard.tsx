@@ -14,7 +14,7 @@ const items = [
   { label: 'Queue order', to: '/visits' },
 ];
 
-export function ClerkDashboard() {
+export default function ClerkDashboard() {
   const { token } = useAuth();
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [loading, setLoading] = useState(true);

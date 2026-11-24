@@ -1,16 +1,16 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../router';
 import React from 'react';
 import credits from '../data/photo-credits.json';
 import { ImageWithFallback } from '../components/ui/ImageWithFallback';
 
-const story = credits.find((c) => c.key === 'story')!;
+const story = credits.find((c) => c.key === 'clinic-reception')!;
 
-export function Story() {
+export default function Story() {
   const navigate = useNavigate();
   return (
     <main id="main">
       <section className="hero" style={{ minHeight: '56vh' }}>
-        <ImageWithFallback src={story.src} alt="Soft light on green leaves in a clinic window" width={1200} height={800} loading="eager" credit={{ name: story.photographer, url: story.photoPage }} className="hero-media" />
+        <ImageWithFallback src={story.src} alt="An unoccupied hospital reception counter" width={1600} height={1067} loading="eager" credit={{ name: story.photographer, url: story.photoPage }} className="hero-media" />
         <div className="hero-overlay" />
         <div className="hero-inner" style={{ padding: '56px 0' }}>
           <span className="pill-badge">Our story</span>

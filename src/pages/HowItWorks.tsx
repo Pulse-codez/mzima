@@ -1,9 +1,9 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../router';
 import React from 'react';
 import credits from '../data/photo-credits.json';
 import { ImageWithFallback } from '../components/ui/ImageWithFallback';
 
-const hero = credits.find((c) => c.key === 'problem-desk')!;
+const hero = credits.find((c) => c.key === 'clinic-reception')!;
 
 const steps = [
   { n: '1', title: 'Registration', text: 'A clerk records a walk-in visit and captures the reason for the visit.' },
@@ -14,12 +14,12 @@ const steps = [
   { n: '6', title: 'Audit', text: 'Every step is logged as an audit event.' },
 ];
 
-export function HowItWorks() {
+export default function HowItWorks() {
   const navigate = useNavigate();
   return (
     <main id="main">
       <section className="hero" style={{ minHeight: '56vh' }}>
-        <img src={hero.src} alt="A clipboard and desk in a quiet clinic" width={1200} height={800} className="hero-img" loading="eager" decoding="async" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+        <img src={hero.src} alt="An unoccupied hospital reception counter" width={1600} height={1067} className="hero-img" loading="eager" decoding="async" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
         <div className="hero-overlay" />
         <div className="hero-inner" style={{ padding: '56px 0' }}>
           <span className="pill-badge">How it works</span>

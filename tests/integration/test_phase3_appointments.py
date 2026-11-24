@@ -1,4 +1,5 @@
 import uuid
+import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 
@@ -29,11 +30,13 @@ from backend.services.appointments.workflow import (
 
 
 @pytest.fixture()
-def phase3_env(tmp_path):
-    db_file = tmp_path / "phase3_test.db"
+def phase3_env():
+    database_url = os.environ.get("TEST_DATABASE_URL")
+    if not database_url:
+        pytest.fail("TEST_DATABASE_URL must point to an isolated PostgreSQL database")
     engine = create_engine(
-        f"sqlite:///{db_file}",
-        connect_args={"check_same_thread": False, "timeout": 5},
+        database_url,
+        pool_pre_ping=True,
     )
     Base.metadata.create_all(engine)
     SessionFactory = sessionmaker(bind=engine, autoflush=False, autocommit=False)

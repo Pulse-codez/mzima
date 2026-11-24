@@ -14,7 +14,7 @@ const items = [
   { label: 'Care coordination', to: '/triage' },
 ];
 
-export function NurseDashboard() {
+export default function NurseDashboard() {
   const { token } = useAuth();
   const [queue, setQueue] = useState<QueueVisit[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);

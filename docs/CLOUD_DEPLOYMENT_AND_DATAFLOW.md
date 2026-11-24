@@ -186,4 +186,4 @@ Set budgets and alerts before creating resources. Tag resources by environment a
 - [Data, Privacy and Safety](DATA_AND_PRIVACY.md)
 - [Architecture](ARCHITECTURE.md)
 - [Technical stack](TECH_STACK.md)
-- [Backend setup](../BACKEND_SETUP.md)
+- [Backend setup](BACKEND_SETUP.md)
