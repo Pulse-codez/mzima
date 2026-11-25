@@ -21,8 +21,16 @@
   text-decoration: none;
 }
 
+.mzima-landing > main nav {
+  background-color: #17765e;
+}
+
 .mzima-landing > main nav a {
-  color: #0e2419;
+  color: #eff8f2;
+}
+
+.mzima-landing > main nav a[href="/login"] {
+  color: #081510;
 }
 
 .mzima-landing > main nav > div {
@@ -184,15 +192,15 @@
 }
 
 .idea {
-  --ink: #122a23;
-  --muted: #52665e;
-  --line: rgba(18, 42, 35, 0.18);
-  --jungle: #17765e;
-  --jungle-hot: #0d604b;
+  --ink: #eff8f2;
+  --muted: #c4ded2;
+  --line: rgba(239, 248, 242, 0.25);
+  --jungle: #a4f0cb;
+  --jungle-hot: #d3ffe8;
   position: relative;
   overflow: hidden;
-  background-color: #e8f0ea;
-  background-image: linear-gradient(rgba(18, 42, 35, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(18, 42, 35, 0.035) 1px, transparent 1px);
+  background-color: #17765e;
+  background-image: linear-gradient(rgba(239, 248, 242, 0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(239, 248, 242, 0.045) 1px, transparent 1px);
   background-size: 34px 34px;
   color: var(--ink);
 }
@@ -208,7 +216,7 @@
 }
 
 .idea-statement em {
-  color: var(--jungle);
+  color: #a4f0cb;
   font-style: normal;
 }
 
@@ -226,7 +234,7 @@
   margin: 0;
   overflow: hidden;
   border-radius: 8px;
-  background: #b6c8c0;
+  background: #12362d;
 }
 
 .clinic-photo::after {
@@ -418,7 +426,7 @@
 
 .stat-value {
   display: block;
-  color: var(--jungle);
+  color: #a4f0cb;
   font-family: Fraunces, Georgia, serif;
   font-size: clamp(40px, 4vw, 64px);
   letter-spacing: -0.04em;

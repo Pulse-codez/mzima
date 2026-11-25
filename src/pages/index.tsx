@@ -4,7 +4,6 @@ import { Idea } from '../components/marketing/Idea';
 import { Capabilities } from '../components/marketing/Capabilities';
 import { HowItWorks } from '../components/marketing/HowItWorks';
 import { Safety } from '../components/marketing/Safety';
-import { Questions } from '../components/marketing/Questions';
 import { Close } from '../components/marketing/Close';
 import '../components/marketing/landing.css';
 
@@ -37,7 +36,6 @@ export default function Home() {
       <Capabilities />
       <HowItWorks />
       <Safety />
-      <Questions />
       <Close />
     </div>
   );
