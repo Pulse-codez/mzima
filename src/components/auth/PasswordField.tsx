@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
-import { authInput } from './styles';
+import { authError, authInput, authLabel } from './styles';
 
 interface PasswordFieldProps {
   id: string;
@@ -44,10 +44,12 @@ export function PasswordField({
     [capsLockHint],
   );
 
+  const showError = !!touched && !!error;
+
   return (
     <div>
       {label && (
-        <label htmlFor={id} className="mb-2 block text-sm font-semibold text-white">
+        <label htmlFor={id} className={authLabel}>
           {label}
         </label>
       )}
@@ -62,11 +64,11 @@ export function PasswordField({
           onBlur={onBlur}
           onKeyDown={handleKey}
           onKeyUp={handleKey}
-          aria-invalid={touched && !!error ? true : undefined}
+          aria-invalid={showError ? true : undefined}
           aria-describedby={describedBy}
           disabled={disabled}
           placeholder={placeholder}
-          className={`${authInput} pr-12`}
+          className={`${authInput} pr-14`}
         />
         <button
           type="button"
@@ -74,18 +76,18 @@ export function PasswordField({
           aria-pressed={show}
           aria-label={show ? 'Hide password' : 'Show password'}
           disabled={disabled}
-          className="absolute right-2 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-lg text-stone-light hover:bg-white/10 hover:text-white disabled:opacity-50"
+          className="absolute right-1 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center text-forest-deep/70 transition-colors duration-200 hover:bg-forest-deep/10 hover:text-forest-deep focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-forest-deep disabled:opacity-50"
         >
           {show ? <EyeOff className="h-5 w-5" aria-hidden="true" /> : <Eye className="h-5 w-5" aria-hidden="true" />}
         </button>
       </div>
       {capsLockHint && capsOn && !disabled && (
-        <p className="mt-2 text-sm font-semibold text-white" role="status">
+        <p className="mt-2 font-tight text-sm font-medium text-white" role="status">
           Caps Lock is on
         </p>
       )}
-      {touched && error && (
-        <p className="mt-2 text-sm font-semibold text-white" id={`${id}-error`}>
+      {showError && (
+        <p className={authError} id={`${id}-error`}>
           {error}
         </p>
       )}

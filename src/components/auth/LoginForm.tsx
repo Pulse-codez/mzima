@@ -5,7 +5,7 @@ import { useAuth } from '../../auth/AuthContext';
 import { AuthFailure } from '../../auth/api';
 import { Button } from '../ui/Button';
 import { CheckCircle2 } from 'lucide-react';
-import { authInput, authLabel } from './styles';
+import { authError, authInput, authLabel } from './styles';
 
 function roleHome(role: string | undefined): string {
   if (role === 'clerk') return '/visits';
@@ -101,22 +101,24 @@ export function LoginForm() {
   if (success) {
     return (
       <div className="py-12 text-center" role="status" aria-live="polite">
-        <CheckCircle2 className="mx-auto h-14 w-14 text-stone-light" aria-hidden="true" />
-        <h2 className="mt-6 font-heading text-2xl font-extrabold text-white">Signed in</h2>
-        <p className="mt-2 text-white/85">Taking you to your workspace.</p>
+        <CheckCircle2 className="mx-auto h-14 w-14 text-jungle-hot" aria-hidden="true" />
+        <h2 className="mt-6 font-helvetica text-3xl tracking-[-0.04em] text-white">Signed in</h2>
+        <p className="mt-2 text-mist">Taking you to your workspace.</p>
       </div>
     );
   }
 
+  const usernameInvalid = !!touched.username && !!errors.username;
+
   return (
     <>
-      <h1 className="font-heading text-3xl font-extrabold text-white">Welcome back</h1>
-      <p className="mt-2 text-white/85">Sign in to continue to your workspace.</p>
+      <h1 className="font-helvetica text-[40px] leading-[1.1] tracking-[-0.05em] text-white">Welcome back</h1>
+      <p className="mt-3 text-mist">Sign in to continue to your workspace.</p>
 
       {formError && (
-        <div className="mt-6 border-l-4 border-scarlet bg-egyptian-deep p-4" role="alert">
-          <p className="text-sm font-semibold text-white">{formError}</p>
-          {cooldown > 0 && <p className="mt-1 text-sm text-white/85">You can try again in {cooldown}s.</p>}
+        <div className="mt-6 border-l-4 border-[#FF8A75] bg-forest p-4" role="alert">
+          <p className="font-tight text-sm font-medium text-white">{formError}</p>
+          {cooldown > 0 && <p className="mt-1 text-sm text-mist">You can try again in {cooldown}s.</p>}
         </div>
       )}
 
@@ -133,14 +135,14 @@ export function LoginForm() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             onBlur={usernameBlur}
-            aria-invalid={touched.username && !!errors.username ? true : undefined}
-            aria-describedby={touched.username && errors.username ? 'login-username-error' : undefined}
+            aria-invalid={usernameInvalid ? true : undefined}
+            aria-describedby={usernameInvalid ? 'login-username-error' : undefined}
             disabled={disabled}
             placeholder="Enter your username"
             className={authInput}
           />
-          {touched.username && errors.username && (
-            <p className="mt-2 text-sm font-semibold text-white" id="login-username-error">
+          {usernameInvalid && (
+            <p className={authError} id="login-username-error">
               {errors.username}
             </p>
           )}
@@ -159,37 +161,38 @@ export function LoginForm() {
         />
 
         <div className="flex items-center justify-between text-sm">
-          <label className="flex cursor-pointer items-center gap-2 text-white/85">
-            <input type="checkbox" className="h-4 w-4 accent-white" />
+          <label className="flex min-h-[44px] cursor-pointer items-center gap-2 font-tight text-mist">
+            <input type="checkbox" className="h-4 w-4 accent-[#29AB87]" />
             Remember me
           </label>
           <button
             type="button"
             onClick={() => setShowForgot((s) => !s)}
-            className="min-h-[44px] font-semibold text-white underline underline-offset-4 hover:text-stone-light"
+            aria-expanded={showForgot}
+            className="min-h-[44px] font-tight text-sm font-medium text-white underline underline-offset-4 transition-colors duration-200 hover:text-jungle-hot focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-jungle-hot"
           >
             Forgot password?
           </button>
         </div>
 
         {showForgot && (
-          <p className="rounded-xl border border-stone/50 bg-egyptian-deep p-3 text-sm text-white/85" role="status">
+          <p className="border border-white/40 bg-forest p-3 text-sm text-mist" role="status">
             Ask your shift lead to reset your access.
           </p>
         )}
 
-        <Button type="submit" variant="scarlet" size="lg" disabled={disabled} className="w-full">
+        <Button type="submit" variant="primary" size="lg" disabled={disabled} className="w-full">
           {submitting ? 'Signing in…' : cooldown > 0 ? 'Please wait…' : 'Sign in'}
         </Button>
       </form>
 
-      <p className="mt-8 text-center text-sm text-white/85">
+      <p className="mt-8 text-center text-sm text-mist">
         Need access?{' '}
-        <Link to="/sign-up" className="font-semibold text-white underline underline-offset-4 hover:text-stone-light">
+        <Link to="/sign-up" className="font-medium text-white underline underline-offset-4 hover:text-jungle-hot">
           Request it here
         </Link>
       </p>
-      <p className="mt-3 text-center text-xs text-stone-light">
+      <p className="mt-3 text-center font-tight text-xs text-mist">
         Access is issued on site by a shift lead and reviewed before activation.
       </p>
     </>
