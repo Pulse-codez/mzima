@@ -17,6 +17,12 @@
 
 * { box-sizing: border-box; }
 .site-shell { min-height: 100vh; background: var(--peach-50); color: var(--ink); font-family: var(--font-body); }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fadeIn 700ms ease-out forwards; }
 .max { width: min(var(--max, 1180px), 92vw); margin: 0 auto; }
 
 .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
@@ -302,8 +308,8 @@
   .sc-main { padding: 12px; }
 }
 
-/* ===== Mzima theme: Egyptian blue, stone blue, scarlet for focus ===== */
-html, body { background: #1034A6; color: #FFFFFF; }
+/* ===== Mzima theme: Jungle green, forest green, scarlet for focus ===== */
+html, body { background: #063328; color: #FFFFFF; }
 *:focus-visible { outline: 3px solid #FFFFFF; outline-offset: 3px; }
 
 .spotlight-nav-bg { background: rgba(11, 36, 120, 0.6); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
